@@ -4,151 +4,206 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Van Escolar Tia Patrícia e Tio Vitor · Jandira, Barueri e Osasco</title>
-<meta name="description" content="Transporte escolar de Jandira e Barueri até a Fundação Bradesco, em Osasco. Centro, Jardim Tereza, Jardim Fátima, Jardim Califórnia, Jardim Tupanci, Vila Engenho Novo, Jardim Silveira e Parque dos Camargos. Turmas de manhã e tarde. Van vistoriada.">
-<meta name="theme-color" content="#0A0608">
+<meta name="description" content="Transporte escolar de Jandira e Barueri até a Fundação Bradesco, em Osasco. Busca em casa no Centro, Jardim Gabriela, Parque Viana, Jardim Maria Helena e outros bairros. Turmas de manhã e tarde. Van vistoriada.">
+<meta name="theme-color" content="#EFEFEF">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Van Escolar Tia Patrícia e Tio Vitor">
+<meta property="og:description" content="Transporte escolar de Jandira e Barueri até a Fundação Bradesco, em Osasco. Busca em casa, ida e volta. Vagas 2027.">
+<meta property="og:url" content="https://TROQUE-PELO-SEU-ENDERECO/">
+<meta property="og:image" content="https://TROQUE-PELO-SEU-ENDERECO/capa.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg0:#0A0608;--bg1:#15100F;--bg2:#1F1819;--line:rgba(255,255,255,.1);--tx:#FFF8F2;--mu:#B9ADA3;--mu2:#8A7F74;--ac:#F4845F;--gold:#D9BB63;--zap:#25D366}
+:root{--pg:#EFEFEF;--g2:#F5F5F5;--tx:#1A1410;--mu:#5A5047;--mu2:#8A7F74;--line:rgba(26,20,16,.1);--dk:#0A0608;--dk2:#1F1819;--dtx:#FFF8F2;--dline:rgba(255,255,255,.1);--ac:#F4845F;--gold:#D9BB63;--zap:#25D366}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 html,body{margin:0;padding:0}
-body{font-family:Inter,system-ui,sans-serif;background:var(--bg0);color:var(--tx);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{font-family:Inter,system-ui,sans-serif;background:var(--pg);color:var(--tx);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 body.menu-on{overflow:hidden}
-.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
 a{color:inherit}
 button{font:inherit}
-section,footer{position:relative;scroll-margin-top:72px}
-.label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0;color:var(--ac)}
-.ico{width:18px;height:18px;flex:none}
+img{display:block}
+section,footer{position:relative;scroll-margin-top:90px}
 .wrap{max-width:1152px;margin:0 auto}
-.sec{padding:96px 16px;border-top:1px solid var(--line)}
-h2.serif{margin:14px 0 0;font-size:clamp(36px,5vw,64px);line-height:1;letter-spacing:-.02em}
-.lead{margin:16px 0 0;max-width:440px;font-size:15px;line-height:1.7;color:var(--mu)}
-.pill{display:inline-flex;align-items:center;gap:8px;background:var(--tx);color:#0A0608;border-radius:999px;padding:14px 28px;font-size:14px;font-weight:500;letter-spacing:.02em;text-decoration:none;border:0;cursor:pointer;transition:transform .3s,background .3s;box-shadow:0 0 20px rgba(255,255,255,.25),0 0 40px rgba(255,255,255,.08)}
-.pill:hover{transform:translateY(-2px);background:#fff}
-.ghost{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.35);color:var(--tx);border-radius:999px;padding:13px 24px;font-size:14px;font-weight:500;text-decoration:none;transition:border-color .3s,background .3s}
-.ghost:hover{border-color:#fff;background:rgba(255,255,255,.06)}
-.logo{width:46px;height:26px;flex:none}
-@media(min-width:1024px){.sec{padding:128px 40px}}
+.sec{padding:80px 20px}
+.w{background:#fff}.g{background:var(--g2)}
+.carimbo{display:flex;align-items:center;gap:12px;margin:0 0 28px}
+.num{width:28px;height:28px;border-radius:50%;background:var(--tx);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
+.tag{font-size:13px;font-weight:500;border:1px solid rgba(26,20,16,.15);border-radius:999px;padding:6px 14px;background:#fff}
+h2{margin:0;font-size:clamp(28px,4vw,52px);font-weight:500;line-height:1.12;letter-spacing:-.025em;max-width:820px}
+.lead{margin:20px 0 0;max-width:520px;font-size:16px;line-height:1.65;color:var(--mu)}
+.label{margin:0 0 8px;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--mu2)}
+.ico{width:16px;height:16px;flex:none}
+@media(min-width:1024px){.sec{padding:120px 40px}}
 
-/* ===== MENU FIXO ===== */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;transition:background .4s,padding .4s}
-.nav.solid{background:rgba(10,6,8,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px 20px}
-.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;position:relative;z-index:2}
-.brand-t{font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;line-height:1.2}
-.brand-t small{display:block;font-size:9px;letter-spacing:.22em;color:rgba(255,248,242,.6);margin-bottom:2px}
-.links{display:none;gap:40px;position:absolute;left:50%;transform:translateX(-50%)}
-.links a{font-size:13px;letter-spacing:.06em;color:rgba(255,248,242,.75);text-decoration:none;transition:color .3s}
-.links a:hover{color:#fff}
-.nav .pill{display:none;padding:11px 22px;font-size:13px;box-shadow:none}
-.burger{width:40px;height:40px;border:0;background:none;cursor:pointer;position:relative;padding:0;z-index:2}
-.burger span{position:absolute;left:8px;width:24px;height:2px;background:#fff;border-radius:2px;transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .3s}
-.burger span:nth-child(1){top:11px}.burger span:nth-child(2){top:19px}.burger span:nth-child(3){top:27px}
-.menu-on .burger span:nth-child(1){transform:translateY(8px) rotate(45deg)}
-.menu-on .burger span:nth-child(2){opacity:0;transform:scaleX(0)}
-.menu-on .burger span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
-.menu{position:fixed;top:0;right:0;bottom:0;z-index:90;width:85%;max-width:340px;background:rgba(10,6,8,.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-left:1px solid var(--line);padding:100px 32px 40px;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .5s cubic-bezier(.22,1,.36,1)}
-.menu-on .menu{transform:none}
-.menu a{font-family:'Instrument Serif',serif;font-size:34px;line-height:1.2;margin:0 0 22px;color:var(--tx);text-decoration:none;opacity:0;transform:translateX(24px);transition:opacity .5s,transform .5s cubic-bezier(.22,1,.36,1)}
-.menu-on .menu a{opacity:1;transform:none;transition-delay:.15s}
-.menu-on .menu a:nth-child(2){transition-delay:.225s}.menu-on .menu a:nth-child(3){transition-delay:.3s}
-.menu .pill{margin:auto 0 0;font-family:Inter,sans-serif;font-size:14px;justify-content:center}
-.menu-on .menu .pill{transition-delay:.45s}
-@media(min-width:900px){.nav{padding:22px 48px}.nav.solid{padding:14px 48px}.links{display:flex}.nav .pill{display:inline-flex}.burger,.menu{display:none}}
+/* ===== BOTÕES CORTADOS (oitavado) ===== */
+.cut{--c:12px;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;font-size:14px;font-weight:500;text-decoration:none;border:0;cursor:pointer;white-space:nowrap;clip-path:polygon(var(--c) 0,calc(100% - var(--c)) 0,100% var(--c),100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,var(--c) 100%,0 calc(100% - var(--c)),0 var(--c));transition:background .3s}
+.cut.wh{background:#fff;color:var(--dk)}
+.cut.wh:hover{background:#F2EDE6}
+.cut.ol{background:#fff;color:#fff}
+.cut.ol::before{content:'';position:absolute;inset:1px;background:var(--dk);clip-path:polygon(calc(var(--c) - 1px) 0,calc(100% - var(--c) + 1px) 0,100% calc(var(--c) - 1px),100% calc(100% - var(--c) + 1px),calc(100% - var(--c) + 1px) 100%,calc(var(--c) - 1px) 100%,0 calc(100% - var(--c) + 1px),0 calc(var(--c) - 1px));transition:background .3s}
+.cut.ol:hover::before{background:#1C1416}
+.cut.ol>*{position:relative;z-index:1}
+.cut.gold{background:var(--gold);color:#2B2520}
+.cut.gold:hover{background:#E6CB7A}
+.cut.zap{background:var(--zap);color:#0B3D1F}
+.cut-sm{--c:8px;width:40px;height:40px;padding:0}
+.cut-xs{--c:8px;padding:8px 14px;font-size:12px;font-weight:600}
+.cut svg{width:16px;height:16px;flex:none;transition:transform .3s}
+.cut:hover svg.arr{transform:translateX(4px)}
 
-/* ===== HERO ===== */
-.hero{height:100vh;height:100svh;min-height:600px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 20px}
-.veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,8,.55) 0%,rgba(10,6,8,.35) 55%,#0A0608 100%)}
+/* ===== BOTÕES EM PÍLULA (texto rola, seta gira) ===== */
+.pill{display:inline-flex;align-items:center;gap:12px;border-radius:999px;padding:8px 8px 8px 20px;font-size:14px;font-weight:500;text-decoration:none;border:0;cursor:pointer;transition:background .3s,box-shadow .3s}
+.pill.dk{background:var(--tx);color:#fff}
+.pill.dk:hover{background:#2C2420}
+.pill.or{background:var(--ac);color:#fff}
+.pill.or:hover{background:#E8734E}
+.pill.lt{background:#fff;color:var(--tx);border:1px solid rgba(26,20,16,.15);padding:7px 7px 7px 20px}
+.pill.lt:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.circ{width:28px;height:28px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.circ svg{width:14px;height:14px;transition:transform .5s cubic-bezier(.25,.1,.25,1)}
+.pill.dk .circ{color:var(--tx)}.pill.or .circ{color:var(--ac)}.pill.lt .circ{background:var(--tx);color:#fff}
+.pill:hover .circ svg{transform:rotate(-45deg)}
+.roll{display:flex;flex-direction:column;height:20px;overflow:hidden;line-height:20px}
+.roll i{display:block;font-style:normal;transition:transform .5s cubic-bezier(.25,.1,.25,1)}
+.pill:hover .roll i{transform:translateY(-100%)}
+
+/* ===== BARRA FIXA (pílula branca, aparece depois do hero) ===== */
+.nav{position:fixed;top:12px;left:12px;right:12px;z-index:100;display:flex;justify-content:center;transform:translateY(-130%);transition:transform .5s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.nav.on{transform:none;pointer-events:auto}
+.navin{width:100%;max-width:1152px;background:#fff;border-radius:999px;padding:6px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.brand-c{width:40px;height:40px;border-radius:50%;background:var(--dk);display:flex;align-items:center;justify-content:center;flex:none}
+.brand-c svg{width:26px;height:16px}
+.links{display:none;gap:24px;font-size:14px}
+.links a{text-decoration:none;color:var(--tx);transition:color .3s}
+.links a:hover{color:var(--mu2)}
+.nav .pill{display:none}
+.burger{background:var(--tx);color:#fff;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:500;border:0;cursor:pointer}
+@media(min-width:900px){.links{display:flex}.nav .pill{display:inline-flex}.burger{display:none}}
+
+/* ===== MENU DO CELULAR (folha que sobe) ===== */
+.sheet-bg{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .4s}
+.sheet{position:fixed;left:12px;right:12px;bottom:12px;z-index:95;background:#fff;border-radius:20px;padding:20px 24px 24px;transform:translateY(calc(100% + 24px));transition:transform .5s cubic-bezier(.32,.72,0,1)}
+.menu-on .sheet-bg{opacity:1;pointer-events:auto}
+.menu-on .sheet{transform:none}
+.sheet-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.sheet-top .tag{font-size:12px}
+.sheet-x{background:none;border:0;font-size:13px;font-weight:500;color:var(--mu2);cursor:pointer;padding:8px}
+.sheet nav a{display:block;font-size:28px;font-weight:500;line-height:1.2;text-decoration:none;padding:10px 0;border-top:1px solid var(--line)}
+.sheet .pill{margin-top:20px;width:100%;justify-content:space-between}
+
+/* ===== HERO (cartão escuro) ===== */
+.hwrap{padding:12px}
+.hero{position:relative;min-height:calc(100vh - 24px);min-height:calc(100svh - 24px);border-radius:24px;background:var(--dk);color:var(--dtx);overflow:hidden;display:flex;flex-direction:column;padding:20px 18px 24px}
+.blob{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;will-change:transform}
+.b1{width:60vw;max-width:720px;aspect-ratio:1;right:-15%;top:-25%;background:rgba(244,132,95,.3);animation:flutua 18s ease-in-out infinite alternate}
+.b2{width:45vw;max-width:520px;aspect-ratio:1;left:-15%;bottom:-20%;background:rgba(244,132,95,.16);animation:flutua 22s ease-in-out infinite alternate-reverse}
+@keyframes flutua{to{transform:translate(8%,10%)}}
+.ray{position:absolute;z-index:1;height:1px;width:70%;left:-10%;background:linear-gradient(90deg,transparent,rgba(244,132,95,.55),transparent);pointer-events:none}
+.r1{top:30%;animation:ray 7s ease-in-out infinite}
+.r2{top:72%;animation:ray 9s ease-in-out infinite reverse}
+@keyframes ray{0%,100%{opacity:.2;transform:translateX(-10%) rotate(-12deg)}50%{opacity:.8;transform:translateX(30%) rotate(-12deg)}}
 .grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.35;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");background-size:200px 200px}
-.hero-c{position:relative;z-index:3;max-width:900px;margin-top:-40px}
-.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,248,242,.7);margin:0 0 24px}
-.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:clamp(44px,9vw,112px);line-height:.95;letter-spacing:-.025em;margin:0;text-shadow:0 0 40px rgba(255,255,255,.35),0 0 80px rgba(255,255,255,.15),0 0 120px rgba(255,255,255,.08)}
-.hero h1 em{color:#FFE4D6}
-.sub{margin:26px auto 0;max-width:520px;font-size:15px;line-height:1.7;color:rgba(255,248,242,.75)}
-.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:34px}
-.cue{position:absolute;left:40px;bottom:36px;z-index:3;display:none;align-items:center;gap:14px;font-size:12px;line-height:1.4;color:rgba(255,248,242,.6)}
-.cue i{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);position:relative}
-.cue i::after{content:'';position:absolute;left:50%;top:12px;width:1px;height:12px;background:#fff;animation:cue 1.8s ease-in-out infinite}
-@keyframes cue{0%,100%{transform:translate(-50%,0);opacity:1}50%{transform:translate(-50%,6px);opacity:.3}}
-@media(min-width:900px){.cue{display:flex}}
+.st{opacity:0;animation:fadeUp .8s cubic-bezier(.16,1,.3,1) var(--d,0s) forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.hbar{position:relative;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.hbrand{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:inherit}
+.hbrand svg{width:56px;height:32px}
+.hbrand span{font-size:10px;letter-spacing:.4em;font-weight:300;text-transform:uppercase}
+.hbtns{display:flex;gap:10px;align-items:center}
+.hb-desk{display:none;gap:10px}
+.hmid{position:relative;z-index:3;flex:1;display:grid;grid-template-columns:1fr;gap:24px;align-items:center;justify-items:center;text-align:center;padding:32px 0}
+.hero h1{font-weight:300;font-size:clamp(34px,6.5vw,80px);line-height:1.08;letter-spacing:-.04em;margin:0;max-width:800px;text-shadow:0 2px 12px rgba(0,0,0,.25)}
+.hero h1 b{font-weight:500}
+.selo{position:relative;width:min(60vw,250px);aspect-ratio:250/300;perspective:900px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.selo:active{cursor:grabbing}
+.moeda{width:100%;height:100%;position:relative;transform-style:preserve-3d}
+.lado{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;filter:drop-shadow(0 24px 30px rgba(0,0,0,.65))}
+.verso{transform:rotateY(180deg)}
+.lado svg{width:100%;height:100%;display:block}
+.brilho{position:absolute;left:0;top:0;width:100%;aspect-ratio:1;border-radius:50%;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.45) 50%,transparent 58%);background-size:300% 100%;animation:brilho 4s ease-in-out infinite;pointer-events:none;mix-blend-mode:screen}
+@keyframes brilho{0%{background-position:100% 0}100%{background-position:0 0}}
+.hrow{position:relative;z-index:3;display:grid;gap:24px;align-items:center;text-align:center}
+.hcta{display:flex;flex-direction:column;align-items:center;gap:18px}
+.hcta small{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,248,242,.7)}
+.hsoc{display:flex;justify-content:center;gap:10px}
+.hsoc svg{width:18px;height:18px}
+@media(min-width:900px){.hero{padding:32px 40px 40px}.hb-desk{display:flex}.hmenu{display:none}.hmid{grid-template-columns:1.2fr .8fr;text-align:left;justify-items:start}.selo{justify-self:end}.hrow{grid-template-columns:1fr auto 1fr;text-align:left}.hcta{gap:44px}.hsoc{justify-content:flex-end}}
+@media(min-width:1280px){.selo{width:290px}}
 
-/* ===== NOSSA HISTÓRIA (3 celulares) ===== */
-.hist{border-top:0}
-.phones{display:flex;flex-direction:column;align-items:center;gap:40px;margin-top:56px}
-.phone{--d:.1s;position:relative;width:clamp(200px,70vw,320px);aspect-ratio:390/844;container-type:inline-size}
-.phone.wait{opacity:0;transform:translateY(30px)}
-.phone.in{animation:subir .9s cubic-bezier(.16,1,.3,1) var(--d) both}
+/* ===== NOSSA HISTÓRIA (fotos) ===== */
+.hist-row{display:flex;flex-wrap:wrap;align-items:center;gap:20px 32px;margin-top:20px}
+.hist-row .lead{margin:0}
+.fotos{display:grid;gap:16px;margin-top:44px}
+.foto{position:relative;margin:0;border-radius:20px;overflow:hidden;aspect-ratio:4/3;background:#D9D4CC}
+.foto img{width:100%;height:100%;object-fit:cover}
+.foto figcaption{position:absolute;left:14px;bottom:14px;background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:500;color:var(--tx)}
+.foto figcaption b{font-weight:600}
+.esp{opacity:0;transform:translateY(24px)}
+.esp.vis{animation:subir .8s cubic-bezier(.16,1,.3,1) var(--d,0s) both}
 @keyframes subir{to{opacity:1;transform:none}}
-.frame{position:relative;width:100%;height:100%;background:#000;border-radius:clamp(30px,4vw,54px);padding:clamp(6px,1vw,12px);box-shadow:0 25px 50px -12px rgba(0,0,0,.7)}
-.frame::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);pointer-events:none}
-.pbtn{position:absolute;width:3px;background:#404040;border-radius:2px}
-.pbtn.l1{left:-3px;top:19%;height:4.5%}.pbtn.l2{left:-3px;top:26%;height:7.3%}.pbtn.l3{left:-3px;top:35.5%;height:7.3%}.pbtn.r1{right:-3px;top:30.8%;height:11.4%}
-.screen{position:relative;width:100%;height:100%;border-radius:clamp(24px,3.2vw,44px);overflow:hidden;background:#0a0e1c}
-.screen img{position:absolute;left:0;top:0;width:100%;height:114%;object-fit:cover;object-position:center top}
-.fog{position:absolute;left:0;right:0;bottom:0;height:50%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);-webkit-mask:linear-gradient(to bottom,transparent 0%,#000 50%);mask:linear-gradient(to bottom,transparent 0%,#000 50%);pointer-events:none}
-.island{position:absolute;top:3%;left:50%;transform:translateX(-50%);width:30%;height:4%;background:#000;border-radius:999px;z-index:5}
-.toplabel{position:absolute;top:9.5%;left:7%;right:7%;font-size:3cqw;letter-spacing:.16em;text-transform:uppercase;opacity:.8;z-index:5;text-shadow:0 1px 8px rgba(0,0,0,.6)}
-.cap{position:absolute;left:7%;right:7%;bottom:6%;z-index:5}
-.ano{display:block;font-family:'Instrument Serif',serif;font-size:26cqw;line-height:.9;letter-spacing:-.02em;text-shadow:0 4px 24px rgba(0,0,0,.45)}
-.leg{display:block;margin-top:8px;font-size:3.2cqw;letter-spacing:.16em;text-transform:uppercase;opacity:.85}
-.wait .ano,.wait .leg{opacity:0;transform:translateY(14px);filter:blur(8px)}
-.in .ano{animation:surgir .9s cubic-bezier(.16,1,.3,1) calc(var(--d) + .4s) both}
-.in .leg{animation:surgir .9s cubic-bezier(.16,1,.3,1) calc(var(--d) + .6s) both}
-@keyframes surgir{to{opacity:1;transform:none;filter:blur(0)}}
-@media(min-width:768px){.phones{flex-direction:row;align-items:flex-end;justify-content:center;gap:2vw}.phone{width:min(25vw,42vh)}.phone:nth-child(2){--d:.3s;margin-bottom:-24px}.phone:nth-child(3){--d:.5s}}
-@media(min-width:1280px){.phone{width:min(28vw,48vh,350px)}}
+@media(min-width:640px){.fotos{grid-template-columns:repeat(3,1fr);align-items:end}.foto{aspect-ratio:4/5}.foto:nth-child(2){margin-bottom:28px}}
 
-/* ===== DEPOIMENTO (amanhecer com paralaxe) ===== */
-.quote{min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:120px 20px 30vh;background:linear-gradient(180deg,#0A0608 0%,#1A1226 34%,#3B2545 62%,#B5633E 100%)}
-.sun{position:absolute;left:50%;bottom:20%;width:60vw;max-width:720px;aspect-ratio:1;border-radius:50%;transform:translate(-50%,50%);background:radial-gradient(circle,rgba(255,196,120,.55) 0%,rgba(255,150,90,.18) 40%,rgba(255,150,90,0) 70%);pointer-events:none;will-change:transform}
-.cloud{position:absolute;width:520px;height:120px;border-radius:999px;background:rgba(255,255,255,.07);filter:blur(16px);opacity:0;will-change:transform,opacity;pointer-events:none}
-.cloud::before,.cloud::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,.07)}
-.cloud::before{width:220px;height:220px;left:70px;top:-120px}
-.cloud::after{width:160px;height:160px;left:260px;top:-70px}
-.c1{left:-120px;bottom:38%}.c2{right:-160px;bottom:30%}
-.road{position:absolute;left:0;right:0;bottom:0;height:20%;background:#0A0608;border-top:1px solid rgba(255,255,255,.08)}
-.road::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:repeating-linear-gradient(90deg,rgba(255,248,242,.45) 0 40px,transparent 40px 80px)}
-.roadvan{position:absolute;left:0;top:50%;transform:translate(-120px,-50%);will-change:transform}
-.roadvan svg{display:block;width:84px;height:50px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
-.quote blockquote{position:relative;z-index:5;margin:0;max-width:880px;text-align:center}
-.quote blockquote p{font-size:clamp(22px,4vw,42px);line-height:1.45;margin:0;text-shadow:0 2px 30px rgba(0,0,0,.35)}
-.quote cite{display:block;margin-top:28px;font-style:normal;font-size:14px;letter-spacing:.08em;color:rgba(255,248,242,.8)}
-@media(max-width:640px){.cloud{display:none}.roadvan svg{width:60px;height:36px}}
+/* ===== DEPOIMENTO ===== */
+.quote{text-align:center;padding:80px 20px}
+.quote blockquote{margin:0 auto;max-width:860px}
+.quote p{margin:0;font-size:clamp(22px,3.6vw,40px);font-weight:300;line-height:1.3;letter-spacing:-.02em}
+.quote .assin{display:block;margin-top:24px;font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--mu2)}
 
 /* ===== ROTA ===== */
 .rota .wrap{display:grid;gap:48px}
-.rota h2{margin-top:0}
-.tl{position:relative;list-style:none;margin:36px 0 0;padding:0 0 0 44px}
-.tl::before{content:'';position:absolute;left:15px;top:12px;bottom:12px;width:6px;border-radius:3px;background:var(--ac)}
-.van{position:absolute;left:6px;top:8px;z-index:2;width:24px;height:24px;border-radius:50%;background:var(--tx);color:#0A0608;display:flex;align-items:center;justify-content:center;animation:ride 7s ease-in-out infinite}
-.van svg{width:14px;height:14px}
-@keyframes ride{0%{top:8px}45%,55%{top:calc(100% - 32px)}100%{top:8px}}
-.stop{position:relative;padding:0 0 28px}
-.stop:last-child{padding-bottom:0}
-.dot{position:absolute;left:-40px;top:4px;width:24px;height:24px;border-radius:50%;background:var(--bg0);border:5px solid var(--ac)}
-.stop:last-child .dot{background:var(--ac)}
-.stop b{display:block;font-family:'Instrument Serif',serif;font-weight:400;font-size:28px;line-height:1.1}
-.stop small{display:block;font-size:14px;color:var(--mu)}
-.chips{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
-.chips li{border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500;line-height:1.2}
-.chips.mini{margin-top:10px}
-.chips.mini li{padding:4px 10px;font-size:12px}
-.extras{margin-top:28px;display:grid;gap:16px}
-.extras .label{color:var(--mu2)}
-.nota{margin:8px 0 0;max-width:440px;font-size:14px;line-height:1.6;color:var(--mu)}
-.rota .ghost{margin-top:32px}
+.tl{list-style:none;margin:36px 0 0;padding:0;display:grid;gap:22px}
+.stop{display:grid;grid-template-columns:28px 1fr;gap:14px;align-items:start}
+.stop .num{margin-top:2px}
+.stop b{display:block;font-size:20px;font-weight:500;line-height:1.2}
+.stop small{display:block;font-size:14px;color:var(--mu);margin-top:2px}
+.chips{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.chips li{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:500;line-height:1.2}
+.extras{margin-top:32px;display:grid;gap:18px}
+.nota{margin:0;max-width:440px;font-size:14px;line-height:1.6;color:var(--mu)}
+.rota .pill{margin-top:32px}
 .mapwrap{position:relative}
-#mapa{height:460px;border-radius:18px;overflow:hidden;background:var(--bg2);border:1px solid var(--line)}
-.kmbadge{position:absolute;left:16px;bottom:16px;z-index:1001;background:var(--tx);color:#0A0608;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:600}
-.vanmk{transform-origin:center}
+#mapa{height:460px;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#262423}
+.kmbadge{position:absolute;left:16px;bottom:16px;z-index:1001;background:#fff;color:var(--tx);border-radius:999px;padding:8px 14px;font-size:12px;font-weight:600}
+.rota-fluxo{animation:fluxo 1.6s linear infinite}
+@keyframes fluxo{to{stroke-dashoffset:-14}}
+.parada{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--ac);border:3px solid #0A0608;color:#2B2520;font:600 12px Inter,sans-serif;box-shadow:0 0 0 4px rgba(244,132,95,.25)}
+.leaflet-tooltip.etq{background:rgba(10,6,8,.85);color:#FFF8F2;border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 12px;font:500 12px Inter,sans-serif;box-shadow:none}
+.leaflet-tooltip.etq::before{display:none}
+.leaflet-bar{border:1px solid rgba(255,255,255,.12)!important;border-radius:12px!important;overflow:hidden;box-shadow:none!important}
+.leaflet-bar a{background:#1F1819;color:#FFF8F2;border-bottom-color:rgba(255,255,255,.12)}
+.leaflet-bar a:hover,.leaflet-bar a:focus{background:#2A2224;color:#fff}
+.leaflet-control-layers{background:#1F1819;color:#FFF8F2;border:1px solid rgba(255,255,255,.12)!important;border-radius:12px!important;box-shadow:none!important}
+.leaflet-control-layers-toggle{filter:invert(1)}
+.leaflet-control-layers-expanded{padding:10px 14px;font:13px Inter,sans-serif}
+.leaflet-control-attribution{background:rgba(10,6,8,.7)!important;color:#8A7F74}
+.leaflet-control-attribution a{color:#B9ADA3}
 @media(min-width:1024px){.rota .wrap{grid-template-columns:.9fr 1.1fr;align-items:center}}
 
-/* ===== VALE DESCONTO (caixa 3D + cartão dourado) ===== */
-.vale{background:var(--bg1);padding:96px 16px;overflow:hidden;text-align:center;border-top:1px solid var(--line)}
-.vale .label{color:var(--gold)}
+/* ===== CUIDADOS (como funciona) ===== */
+.cuid{--colete:var(--ac)} /* TROQUE pela cor do colete, ex.: #2E7D32 (verde) */
+.grupo{margin:40px 0 12px;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--mu2)}
+.cuis{display:grid;gap:14px}
+.cui{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px}
+.cui svg{width:26px;height:26px;color:var(--ac)}
+.cui.colete svg{color:var(--colete)}
+.cui b{display:block;font-size:18px;font-weight:500;line-height:1.2;margin:14px 0 6px}
+.cui span{display:block;font-size:14px;line-height:1.6;color:var(--mu)}
+@media(min-width:640px){.cuis{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.cuis.tres{grid-template-columns:repeat(3,1fr)}}
+
+/* ===== VALE DESCONTO (ilha escura + caixa 3D + cartão dourado) ===== */
+.vale{padding:0 12px 80px}
+.isla{position:relative;max-width:1152px;margin:0 auto;background:var(--dk);color:var(--dtx);border-radius:24px;padding:72px 20px;text-align:center;overflow:hidden}
+.isla .label{color:var(--gold)}
+.isla h2{color:var(--dtx);margin:0 auto;max-width:none}
 .scene{perspective:1100px;perspective-origin:50% 25%;height:470px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:28px;cursor:pointer}
 .box{position:relative;width:340px;height:220px;transform-style:preserve-3d;transform:rotateX(84deg) rotateZ(-22deg) translateZ(-120px);opacity:0;transition:transform 1.1s cubic-bezier(.2,.8,.2,1),opacity .8s}
 .in .box{transform:rotateX(58deg) rotateZ(-10deg);opacity:1}
@@ -165,7 +220,7 @@ h2.serif{margin:14px 0 0;font-size:clamp(36px,5vw,64px);line-height:1;letter-spa
 .open .lid{transform:translateZ(18px) rotateX(108deg);transition-delay:.5s}
 .lid .out,.lid .inn{position:absolute;inset:0;border-radius:6px;backface-visibility:hidden}
 .lid .out{background:radial-gradient(120% 90% at 30% 15%,#3a3a42,#17171b 70%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.6)}
-.lid .out::after{content:'VP';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Instrument Serif',serif;font-size:54px;letter-spacing:.06em;color:#C9A84C;text-shadow:0 1px 0 rgba(255,255,255,.12),0 -1px 0 rgba(0,0,0,.8)}
+.lid .out::after{content:'PV';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:46px;font-weight:300;letter-spacing:.12em;color:#C9A84C;text-shadow:0 1px 0 rgba(255,255,255,.12),0 -1px 0 rgba(0,0,0,.8)}
 .lid .inn{background:#121216;transform:rotateX(180deg)}
 .ear{position:absolute;top:0;width:72px;height:220px;border-radius:4px;background:linear-gradient(90deg,#1b1b20,#26262c);transition:transform .8s cubic-bezier(.4,0,.2,1) 1.1s}
 .el{left:0;transform-origin:left center;transform:translateZ(19px)}
@@ -185,178 +240,237 @@ h2.serif{margin:14px 0 0;font-size:clamp(36px,5vw,64px);line-height:1;letter-spa
 .spec{position:absolute;inset:0;background:radial-gradient(circle at var(--mx) var(--my),rgba(255,255,255,.8) 0%,rgba(255,255,255,.22) 16%,rgba(255,255,255,0) 42%)}
 .chip{position:absolute;left:22px;top:22px;width:42px;height:31px;border-radius:6px;background:linear-gradient(135deg,#5a5a63,#2a2a30 55%,#4a4a52);box-shadow:inset 0 0 0 1px rgba(0,0,0,.45)}
 .chip::before{content:'';position:absolute;left:4px;right:4px;top:8px;bottom:8px;border-top:1px solid rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.3)}
-.tag{position:absolute;right:22px;top:26px;font-size:10px;letter-spacing:.2em;color:#6B5A24}
-.mono{position:absolute;left:22px;bottom:46px;font-family:'Instrument Serif',serif;font-size:62px;line-height:1;letter-spacing:.04em;color:#B9953F;text-shadow:0 1px 0 #FFF6D8,0 -1px 0 #7A5F20}
+.tagc{position:absolute;right:22px;top:26px;font-size:10px;letter-spacing:.2em;color:#6B5A24}
+.mono{position:absolute;left:22px;bottom:46px;font-size:54px;font-weight:300;line-height:1;letter-spacing:.08em;color:#B9953F;text-shadow:0 1px 0 #FFF6D8,0 -1px 0 #7A5F20}
 .foot-card{position:absolute;left:22px;right:22px;bottom:18px;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;color:#6B5A24}
 .back{overflow:hidden;backface-visibility:hidden;transform:rotateY(180deg) translateZ(1.2px);background:linear-gradient(135deg,#2a2622,#15100F 50%,#2a2622)}
 .back::before{content:'';position:absolute;left:0;right:0;top:28px;height:34px;background:#0A0608}
 .back .txt{position:absolute;left:22px;bottom:22px;font-size:9px;letter-spacing:.14em;color:#B9ADA3}
-.back .vp2{position:absolute;right:22px;bottom:14px;font-family:'Instrument Serif',serif;font-size:34px;color:#8C7430;text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.6)}
+.back .vp2{position:absolute;right:22px;bottom:14px;font-size:30px;font-weight:300;letter-spacing:.08em;color:#8C7430;text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.6)}
 .copy{opacity:0;transform:translateY(16px);transition:opacity .6s ease 2.3s,transform .6s ease 2.3s}
 .open .copy{opacity:1;transform:none}
-.copy p{margin:16px auto 24px;max-width:440px;font-size:15px;line-height:1.7;color:var(--mu)}
-.vale .pill{background:var(--gold);color:#2B2520;box-shadow:0 0 24px rgba(217,187,99,.35)}
+.copy p{margin:16px auto 24px;max-width:440px;font-size:15px;line-height:1.7;color:rgba(255,248,242,.72)}
 @media(max-width:420px){.in .box{transform:rotateX(58deg) rotateZ(-10deg) scale(.8)}.open .box{transform:rotateX(52deg) rotateZ(-8deg) scale(.8)}}
+
+/* ===== DÚVIDAS COMUNS ===== */
+.faq .wrap{display:grid;gap:32px}
+.faq .lista{border-bottom:1px solid var(--line)}
+.faq details{border-top:1px solid var(--line)}
+.faq summary{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 0;cursor:pointer;list-style:none;font-size:18px;font-weight:500;line-height:1.3}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';flex:none;width:28px;height:28px;border:1px solid rgba(26,20,16,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:400;color:var(--mu2);transition:transform .3s,border-color .3s,color .3s}
+.faq summary:hover::after{border-color:var(--tx);color:var(--tx)}
+.faq details[open] summary::after{transform:rotate(45deg);border-color:var(--ac);color:var(--ac)}
+.faq .resp{margin:0 0 22px;max-width:600px;font-size:15px;line-height:1.7;color:var(--mu)}
+@media(min-width:1024px){.faq .wrap{grid-template-columns:.8fr 1.2fr;align-items:start}}
 
 /* ===== PRÉ-CADASTRO (formulário) ===== */
 .cadastro .wrap{display:grid;gap:32px}
 .cadastro form{display:grid;gap:14px}
 .campo{display:block;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mu2)}
-.campo input,.campo select{display:block;width:100%;margin-top:6px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--bg2);color:var(--tx);padding:13px 14px;font:inherit;font-size:15px;outline:none;color-scheme:dark;transition:border-color .2s}
-.campo input:focus,.campo select:focus{border-color:var(--ac)}
-.campo input::placeholder{color:var(--mu2)}
+.campo input,.campo select{display:block;width:100%;margin-top:6px;border:1px solid rgba(26,20,16,.15);border-radius:12px;background:#fff;color:var(--tx);padding:13px 14px;font:inherit;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s}
+.campo input:focus,.campo select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(244,132,95,.2)}
+.campo input::placeholder{color:#B5ACA3}
 .row2{display:grid;gap:14px}
 .cadastro fieldset{border:0;margin:0;padding:0;min-width:0}
 .cadastro legend{padding:0;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mu2)}
 .rads{display:flex;gap:8px;margin-top:6px}
-.rad{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--bg2);padding:13px;cursor:pointer;font-size:15px;font-weight:500;transition:border-color .2s}
+.rad{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(26,20,16,.15);border-radius:12px;background:#fff;padding:13px;cursor:pointer;font-size:15px;font-weight:500;transition:border-color .2s}
 .rad input{margin:0;width:18px;height:18px;accent-color:var(--ac)}
 .rad:has(input:checked){border-color:var(--ac)}
-.cadastro .pill{justify-self:start;margin-top:4px;background:var(--ac);color:#2B2520;box-shadow:0 0 24px rgba(244,132,95,.3)}
+.cadastro .pill{justify-self:start;margin-top:6px}
 .priv{margin:0;font-size:12px;line-height:1.5;color:var(--mu2)}
 @media(min-width:640px){.row2{grid-template-columns:1fr 1fr}}
 @media(min-width:1024px){.cadastro .wrap{grid-template-columns:.8fr 1.2fr;align-items:start}}
 
-/* ===== RODAPÉ ===== */
-.foot{background:var(--bg1);padding:96px 16px 40px;border-top:1px solid var(--line)}
+/* ===== ENVIO (formulário vira carta, fecha, ganha selo e voa para o WhatsApp) ===== */
+.carta{position:relative}
+.voa{position:relative;perspective:1200px}
+.carta form{position:relative;z-index:2;transform-origin:50% 100%;transition:transform .8s cubic-bezier(.7,0,.3,1),opacity .3s ease 1.2s}
+.env{position:absolute;left:50%;bottom:0;width:min(100%,420px);aspect-ratio:1.6;transform:translate(-50%,40px) scale(.9);opacity:0;pointer-events:none;transition:transform .7s cubic-bezier(.2,.8,.2,1),opacity .35s}
+.env-back{z-index:1;border-radius:14px;background:#E6DDCB}
+.env-front{z-index:3;transform-style:preserve-3d}
+.env-pocket{position:absolute;inset:0;border-radius:14px;background:linear-gradient(180deg,#F4EEE2,#E7DECD);clip-path:polygon(0 34%,50% 68%,100% 34%,100% 100%,0 100%)}
+.env-flap{position:absolute;left:0;right:0;top:0;height:52%;background:#EDE5D6;clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:50% 0;transform:rotateX(180deg);transition:transform .6s cubic-bezier(.4,0,.2,1)}
+.env-selo{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;background:var(--ac);color:#2B2520;font-weight:600;font-size:16px;letter-spacing:.06em;display:flex;align-items:center;justify-content:center;opacity:0;transform:translate(-50%,-50%) scale(1.8) rotate(-14deg);box-shadow:0 6px 16px rgba(0,0,0,.2);transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .2s}
+.envio-msg{position:absolute;left:0;right:0;top:40%;margin:0;text-align:center;font-size:14px;font-weight:500;color:var(--mu);opacity:0;transition:opacity .4s}
+.enviando form{transform:translateY(-30px) scale(.3);opacity:0;pointer-events:none}
+.enviando .env{opacity:1;transform:translate(-50%,0) scale(1)}
+.enviando .env-flap{transform:rotateX(0);transition-delay:.6s}
+.enviando .env-selo{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-8deg);transition-delay:1.1s}
+.enviando .voa{animation:voar .7s cubic-bezier(.6,0,.9,.4) 1.5s forwards}
+.enviando .envio-msg{opacity:1;transition-delay:2s}
+@keyframes voar{to{transform:translate(40vw,-70vh) rotate(18deg) scale(.5);opacity:0}}
+
+/* ===== RODAPÉ (cartão escuro) ===== */
+.fwrap{padding:0 12px 12px}
+.foot{background:var(--dk);color:var(--dtx);border-radius:24px;padding:72px 20px 32px}
 .foot .wrap{display:grid;gap:40px}
+.foot .label{color:var(--ac)}
+.foot h2{color:var(--dtx)}
 .contatos{display:flex;flex-direction:column;gap:12px;margin-top:28px}
-.ct{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:16px 20px;text-decoration:none;transition:transform .2s,border-color .2s}
+.ct{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--dk2);border:1px solid var(--dline);border-radius:16px;padding:16px 20px;text-decoration:none;transition:transform .2s,border-color .2s}
 .ct:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.25)}
 .ct .nm{display:block;font-size:14px;font-weight:500}
-.ct .tel{display:block;font-size:14px;color:var(--mu)}
-.ct .wa{display:inline-flex;align-items:center;gap:8px;background:var(--zap);color:#0B3D1F;border-radius:999px;padding:8px 16px;font-size:12px;font-weight:600;white-space:nowrap}
-.ct .wa.ig{background:none;border:1px solid rgba(255,255,255,.35);color:var(--tx)}
+.ct .tel{display:block;font-size:14px;color:rgba(255,248,242,.65)}
 .info ul{list-style:none;margin:12px 0 28px;padding:0}
-.info li{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.5;color:var(--mu);margin:0 0 8px}
+.info li{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.5;color:rgba(255,248,242,.72);margin:0 0 8px}
 .info li svg{width:16px;height:16px;flex:none;margin-top:2px}
-.legal{max-width:1152px;margin:56px auto 0;padding-top:24px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:16px;font-size:12px;color:var(--mu2)}
+.legal{max-width:1152px;margin:56px auto 0;padding-top:24px;border-top:1px solid var(--dline);display:flex;flex-direction:column;gap:16px;font-size:12px;color:var(--mu2)}
 .legal a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
 @media(min-width:768px){.foot .wrap{grid-template-columns:1.3fr 1fr}.legal{flex-direction:row;justify-content:space-between;align-items:center}}
-@media(min-width:1024px){.foot{padding:128px 40px 40px}}
-@media(prefers-reduced-motion:reduce){.cue i::after,.van{animation:none}.box,.lid,.ear,.card,.copy,.menu,.menu a{transition:none!important}.face::after{animation:none!important}.phone.wait,.wait .ano,.wait .leg{opacity:1;transform:none;filter:none}.phone.in,.in .ano,.in .leg{animation:none}.cloud{opacity:.8}.roadvan{transform:translate(40vw,-50%)}}
+@media(min-width:1024px){.foot{padding:112px 40px 40px}}
+@media(prefers-reduced-motion:reduce){.st{opacity:1;animation:none}.blob,.ray,.brilho{animation:none}.esp{opacity:1;transform:none}.esp.vis{animation:none}.roll i,.circ svg,.cut svg,.faq summary::after{transition:none}.box,.lid,.ear,.card,.copy,.nav,.sheet,.sheet-bg{transition:none!important}.face::after,.rota-fluxo{animation:none!important}}
 </style>
 </head>
 <body>
-<svg style="display:none" aria-hidden="true"><symbol id="van-logo" viewBox="0 0 64 36"><rect x="3" y="8" width="42" height="17" rx="3" fill="#FFF8F2"/><path d="M44 8h6.5c1.6 0 3.1.8 4 2.1l3.6 5.2c.9 1.3 1.4 2.8 1.4 4.4V23c0 1.1-.9 2-2 2H44z" fill="#FFF8F2"/><path d="M46 10.5h4.3c1 0 1.9.5 2.4 1.3l2.8 4.2H46z" fill="#0A0608"/><rect x="7" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="19" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="31" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="3" y="18" width="55" height="3" fill="#F4845F"/><rect x="56.5" y="21.8" width="3" height="2.4" rx="1" fill="#FFD27A"/><circle cx="15" cy="25" r="4.5" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="49" cy="25" r="4.5" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="15" cy="25" r="1.5" fill="#FFF8F2"/><circle cx="49" cy="25" r="1.5" fill="#FFF8F2"/></symbol></svg>
+<svg style="display:none" aria-hidden="true"><symbol id="van-logo" viewBox="0 0 64 36"><rect x="3" y="8" width="42" height="17" rx="3" fill="#FFF8F2"/><path d="M44 8h6.5c1.6 0 3.1.8 4 2.1l3.6 5.2c.9 1.3 1.4 2.8 1.4 4.4V23c0 1.1-.9 2-2 2H44z" fill="#FFF8F2"/><path d="M46 10.5h4.3c1 0 1.9.5 2.4 1.3l2.8 4.2H46z" fill="#0A0608"/><rect x="7" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="19" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="31" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="3" y="18" width="55" height="3" fill="#F4845F"/><rect x="56.5" y="21.8" width="3" height="2.4" rx="1" fill="#FFD27A"/><circle cx="15" cy="25" r="4.5" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="49" cy="25" r="4.5" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="15" cy="25" r="1.5" fill="#FFF8F2"/><circle cx="49" cy="25" r="1.5" fill="#FFF8F2"/></symbol><symbol id="seta" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="zap" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="arroba" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol></svg>
 
-<!-- ===== MENU FIXO ===== -->
+<!-- ===== BARRA FIXA (aparece depois do hero) ===== -->
 <header class="nav" id="nav">
-  <a class="brand" href="#top" aria-label="Van escolar Tia Patrícia e Tio Vitor">
-    <svg class="logo" aria-hidden="true"><use href="#van-logo"/></svg>
-    <span class="brand-t"><small>Van escolar</small>Tia Patrícia &amp; Tio Vitor</span>
-  </a>
-  <nav class="links" aria-label="Seções do site">
-    <a href="#historia">História</a><a href="#rota">Rota</a><a href="#contato">Contato</a>
-  </nav>
-  <a class="pill" href="#vaga">Vagas 2027</a>
-  <button class="burger" id="burger" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  <div class="navin">
+    <a class="brand-c" href="#top" aria-label="Voltar ao topo"><svg aria-hidden="true"><use href="#van-logo"/></svg></a>
+    <nav class="links" aria-label="Seções do site">
+      <a href="#historia">História</a><a href="#rota">Rota</a><a href="#cuidados">Como funciona</a><a href="#duvidas">Dúvidas</a><a href="#contato">Contato</a>
+    </nav>
+    <a class="pill dk" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener"><span class="roll"><i>Chamar no WhatsApp</i><i aria-hidden="true">Chamar no WhatsApp</i></span><span class="circ"><svg aria-hidden="true"><use href="#seta"/></svg></span></a>
+    <button class="burger" id="burger" data-menu type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+  </div>
 </header>
-<aside class="menu" id="menu">
-  <a href="#historia">História</a><a href="#rota">Rota</a><a href="#contato">Contato</a>
-  <a class="pill" href="#vaga">Vagas 2027</a>
+<div class="sheet-bg" id="sheet-bg"></div>
+<aside class="sheet" id="menu" aria-label="Menu">
+  <div class="sheet-top"><span class="tag">Van escolar · Tia Patrícia e Tio Vitor</span><button class="sheet-x" data-menu type="button" aria-label="Fechar menu">Fechar</button></div>
+  <nav>
+    <a href="#historia">História</a><a href="#rota">Rota</a><a href="#cuidados">Como funciona</a><a href="#duvidas">Dúvidas</a><a href="#contato">Contato</a>
+  </nav>
+  <a class="pill or" href="#vaga"><span class="roll"><i>Quero uma vaga</i><i aria-hidden="true">Quero uma vaga</i></span><span class="circ"><svg aria-hidden="true"><use href="#seta"/></svg></span></a>
 </aside>
 
-<!-- ===== HERO ===== -->
+<!-- ===== HERO (cartão escuro) ===== -->
+<div class="hwrap">
 <section class="hero" id="top">
-  <div class="veil"></div>
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <span class="ray r1"></span><span class="ray r2"></span>
   <div class="grain"></div>
-  <div class="hero-c">
-    <p class="eyebrow">Jandira · Barueri · Osasco</p>
-    <h1>Da porta de casa<br><em>à sala de aula.</em></h1>
-    <p class="sub">Transporte escolar de Jandira e Barueri até a Fundação Bradesco, em Osasco. Ida e volta, com busca na porta de casa.</p>
-    <div class="cta">
-      <a class="pill" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener">Chamar no WhatsApp</a>
-      <a class="ghost" href="#rota">Ver a rota</a>
+  <div class="hbar">
+    <a class="hbrand st" style="--d:.1s" href="#top" aria-label="Van escolar Tia Patrícia e Tio Vitor"><svg aria-hidden="true"><use href="#van-logo"/></svg><span>Van escolar</span></a>
+    <div class="hbtns st" style="--d:.2s">
+      <div class="hb-desk">
+        <a class="cut ol" href="#vaga"><span>Vagas 2027</span></a>
+        <a class="cut wh" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+      </div>
+      <button class="cut wh hmenu" id="hmenu" data-menu type="button" aria-expanded="false" aria-controls="menu">Menu</button>
     </div>
   </div>
-  <div class="cue" aria-hidden="true"><i></i><span>Role para<br>conhecer</span></div>
+  <div class="hmid">
+    <h1 class="st" style="--d:.5s">Da porta de casa<br><b>à sala de aula,</b><br>com a Tia Patrícia e o Tio Vitor.</h1>
+    <div class="selo st" id="selo" style="--d:.7s" role="img" aria-label="Medalha: desde 2012, turma 2027">
+      <div class="moeda" id="moeda">
+        <div class="lado frente"><svg viewBox="0 0 250 300" aria-hidden="true">
+<defs>
+<radialGradient id="a-au" cx="35%" cy="28%" r="78%"><stop offset="0" stop-color="#FFF4CF"/><stop offset=".3" stop-color="#E8CF7C"/><stop offset=".6" stop-color="#C9A64A"/><stop offset=".85" stop-color="#9E7A2A"/><stop offset="1" stop-color="#6E5418"/></radialGradient>
+<linearGradient id="a-rl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF6D5"/><stop offset=".5" stop-color="#D9BB63"/><stop offset="1" stop-color="#7A5F20"/></linearGradient>
+<linearGradient id="a-rd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7A5F20"/><stop offset=".5" stop-color="#C9A64A"/><stop offset="1" stop-color="#FFF6D5"/></linearGradient>
+<linearGradient id="a-rib" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9BB63"/><stop offset="1" stop-color="#8C6B22"/></linearGradient>
+<linearGradient id="a-chk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A403C"/><stop offset=".5" stop-color="#15100F"/><stop offset="1" stop-color="#2B2520"/></linearGradient>
+<radialGradient id="a-spec" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<filter id="a-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity=".5"/></filter>
+<filter id="a-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.5"/></filter>
+<path id="a-pb" d="M46,125 A79,79 0 0,0 204,125"/>
+</defs>
+<g><path d="M82 214 L121 224 L113 292 L97 280 L76 290 Z" fill="url(#a-rib)"/><path d="M168 214 L129 224 L137 292 L153 280 L174 290 Z" fill="url(#a-rib)"/><path d="M121 224 L129 224 L136 258 L114 258 Z" fill="#6E5418"/><ellipse cx="125" cy="226" rx="62" ry="14" fill="#000" opacity=".35" filter="url(#a-soft)"/></g>
+<circle cx="125" cy="128" r="108" fill="none" stroke="#6E5418" stroke-width="24" stroke-dasharray="11 4"/>
+<circle cx="125" cy="125" r="108" fill="none" stroke="url(#a-rl)" stroke-width="24" stroke-dasharray="11 4"/>
+<circle cx="125" cy="125" r="108" fill="none" stroke="#5E4616" stroke-opacity=".6" stroke-width="24" stroke-dasharray="4 11" stroke-dashoffset="-11"/>
+<circle cx="125" cy="125" r="97" fill="url(#a-au)" filter="url(#a-sh)"/>
+<circle cx="125" cy="125" r="92" fill="none" stroke="url(#a-rl)" stroke-width="5"/>
+<circle cx="125" cy="125" r="88" fill="none" stroke="url(#a-rd)" stroke-width="2"/>
+<circle cx="125" cy="125" r="44" fill="url(#a-rd)"/><circle cx="125" cy="125" r="41" fill="url(#a-au)"/>
+<circle cx="125" cy="125" r="41" fill="none" stroke="#3D2C0A" stroke-opacity=".5" stroke-width="5" filter="url(#a-soft)"/>
+<path d="M100 126 l15 15 35-38" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" transform="translate(2,5)" filter="url(#a-soft)"/>
+<path d="M100 126 l15 15 35-38" fill="none" stroke="url(#a-chk)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M102 124 l13 13 33-36" fill="none" stroke="#FFF8F2" stroke-opacity=".4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<g transform="translate(0,-6)"><path d="M55 125 l2.4 5 5.5.7-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.7z" fill="#2B2008"/><path d="M195 125 l2.4 5 5.5.7-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.7z" fill="#2B2008"/></g>
+<g font-family="Inter,sans-serif" font-size="18" font-weight="700" letter-spacing="2.5" text-anchor="middle">
+<text fill="#FFF6D5" opacity=".9" transform="translate(0,-1.2)"><textPath href="#a-pb" startOffset="50%">DESDE 2012</textPath></text>
+<text fill="#2B2008"><textPath href="#a-pb" startOffset="50%">DESDE 2012</textPath></text>
+</g>
+<ellipse cx="95" cy="82" rx="50" ry="22" fill="url(#a-spec)" transform="rotate(-32 95 82)"/>
+</svg></div>
+        <div class="lado verso"><svg viewBox="0 0 250 300" aria-hidden="true">
+<g><path d="M82 214 L121 224 L113 292 L97 280 L76 290 Z" fill="url(#a-rib)"/><path d="M168 214 L129 224 L137 292 L153 280 L174 290 Z" fill="url(#a-rib)"/><path d="M121 224 L129 224 L136 258 L114 258 Z" fill="#6E5418"/></g>
+<circle cx="125" cy="128" r="108" fill="none" stroke="#6E5418" stroke-width="24" stroke-dasharray="11 4"/>
+<circle cx="125" cy="125" r="108" fill="none" stroke="url(#a-rl)" stroke-width="24" stroke-dasharray="11 4"/>
+<circle cx="125" cy="125" r="97" fill="url(#a-au)" filter="url(#a-sh)"/>
+<circle cx="125" cy="125" r="92" fill="none" stroke="url(#a-rl)" stroke-width="5"/>
+<g font-family="Inter,sans-serif" text-anchor="middle"><text x="125" y="140" font-size="64" font-weight="500" letter-spacing="2" fill="#FFF6D5" opacity=".9" transform="translate(0,-1.5)">PV</text><text x="125" y="140" font-size="64" font-weight="500" letter-spacing="2" fill="#2B2008">PV</text><text x="125" y="166" font-size="11" font-weight="700" letter-spacing="4" fill="#2B2008">TURMA 2027</text></g>
+</svg></div>
+        <div class="brilho"></div>
+      </div>
+    </div>
+  </div>
+  <div class="hrow">
+    <div aria-hidden="true"></div>
+    <div class="hcta st" style="--d:.85s">
+      <small>Jandira · Barueri · Osasco</small>
+      <a class="cut wh" href="#vaga">Quero uma vaga <svg class="arr" aria-hidden="true"><use href="#seta"/></svg></a>
+    </div>
+    <div class="hsoc st" style="--d:1s">
+      <a class="cut wh cut-sm" href="https://www.instagram.com/van_tiapatricia/" target="_blank" rel="noopener" aria-label="Instagram da van"><svg aria-hidden="true"><use href="#arroba"/></svg></a>
+      <a class="cut wh cut-sm" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener" aria-label="WhatsApp da Tia Patrícia"><svg aria-hidden="true"><use href="#zap"/></svg></a>
+    </div>
+  </div>
 </section>
+</div>
 
 <!-- ===== NOSSA HISTÓRIA ===== -->
-<section class="sec hist" id="historia">
+<section class="sec w" id="historia">
   <div class="wrap">
-    <p class="label">Nossa história</p>
-    <h2 class="serif">Desde 2012 na estrada</h2>
-    <p class="lead">Quatorze anos levando a turma para a escola. A van mudou, o carinho é o mesmo.</p>
-    <div class="phones">
-      <div class="phone">
-        <div class="frame">
-          <span class="pbtn l1"></span><span class="pbtn l2"></span><span class="pbtn l3"></span><span class="pbtn r1"></span>
-          <div class="screen">
-            <img src="foto-2016.png" alt="Tia Patrícia fazendo um coração com as mãos em frente à primeira van, conquistada em 2015" loading="lazy" decoding="async">
-            <div class="fog"></div>
-            <div class="island"></div>
-            <div class="toplabel">Van escolar · Tia Patrícia</div>
-            <div class="cap"><span class="ano">2015</span><span class="leg">A primeira van</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="phone">
-        <div class="frame">
-          <span class="pbtn l1"></span><span class="pbtn l2"></span><span class="pbtn l3"></span><span class="pbtn r1"></span>
-          <div class="screen">
-            <img src="foto-2019.png" alt="A van de 2019, prata com a faixa escolar" loading="lazy" decoding="async">
-            <div class="fog"></div>
-            <div class="island"></div>
-            <div class="toplabel">Van escolar · Tia Patrícia</div>
-            <div class="cap"><span class="ano">2019</span><span class="leg">A van cresceu</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="phone">
-        <div class="frame">
-          <span class="pbtn l1"></span><span class="pbtn l2"></span><span class="pbtn l3"></span><span class="pbtn r1"></span>
-          <div class="screen">
-            <img src="foto-2026.png" alt="Tia Patrícia ao lado da van nova, em 2026" loading="lazy" decoding="async">
-            <div class="fog"></div>
-            <div class="island"></div>
-            <div class="toplabel">Van escolar · Tia Patrícia</div>
-            <div class="cap"><span class="ano">2026</span><span class="leg">A van nova</span></div>
-          </div>
-        </div>
-      </div>
+    <div class="carimbo"><span class="num">1</span><span class="tag">Nossa história</span></div>
+    <h2>Desde 2012 na estrada. A van mudou, o carinho é o mesmo.</h2>
+    <div class="hist-row">
+      <p class="lead">Quatorze anos levando a turma de Jandira e Barueri até a Fundação Bradesco, todos os dias de aula.</p>
+      <a class="pill dk" href="#rota"><span class="roll"><i>Ver a rota</i><i aria-hidden="true">Ver a rota</i></span><span class="circ"><svg aria-hidden="true"><use href="#seta"/></svg></span></a>
+    </div>
+    <div class="fotos">
+      <figure class="foto rv" style="--d:0s"><img src="foto-2016.png" alt="Tia Patrícia fazendo um coração com as mãos em frente à primeira van, conquistada em 2015" loading="lazy" decoding="async"><figcaption><b>2015</b> · A primeira van</figcaption></figure>
+      <figure class="foto rv" style="--d:.15s"><img src="foto-2019.png" alt="A van de 2019, prata com a faixa escolar" loading="lazy" decoding="async"><figcaption><b>2019</b> · A van cresceu</figcaption></figure>
+      <figure class="foto rv" style="--d:.3s"><img src="foto-2026.png" alt="Tia Patrícia ao lado da van nova, em 2026" loading="lazy" decoding="async"><figcaption><b>2026</b> · A van nova</figcaption></figure>
     </div>
   </div>
 </section>
 
-<!-- ===== DEPOIMENTO (amanhecer) — TROQUE o texto pelas palavras reais da Tia Patrícia ===== -->
+<!-- ===== DEPOIMENTO — TROQUE o texto pelas palavras reais da Tia Patrícia ===== -->
 <section class="quote" id="quote" aria-label="Palavra da Tia Patrícia">
-  <div class="sun"></div>
-  <div class="cloud c1"></div><div class="cloud c2"></div>
   <blockquote>
-    <p class="serif">“Cada criança entra na van pelo nome e desce com a certeza de que alguém cuidou dela no caminho. Faço isso desde 2012, e a manhã continua sendo a melhor parte do meu dia.”</p>
-    Tia Patrícia · Van escolar
+    <p>“Cada criança entra na van pelo nome e desce com a certeza de que alguém cuidou dela no caminho. Faço isso desde 2012, e a manhã continua sendo a melhor parte do meu dia.”</p>
+    <span class="assin">Tia Patrícia · Van escolar</span>
   </blockquote>
-  <div class="road"><div class="roadvan" aria-hidden="true"><svg viewBox="0 0 84 50" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="10" width="66" height="26" rx="7" fill="#FFF8F2"/><path d="M50 10h14a8 8 0 0 1 7 4l5 10v12H50z" fill="#FFF8F2"/><rect x="12" y="15" width="14" height="10" rx="2" fill="#2B2520"/><rect x="30" y="15" width="14" height="10" rx="2" fill="#2B2520"/><path d="M55 15h9a4 4 0 0 1 3.5 2l3.5 8H55z" fill="#2B2520"/><rect x="6" y="28" width="66" height="4" fill="#F4845F"/><circle cx="22" cy="38" r="6" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="62" cy="38" r="6" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><rect x="74" y="24" width="4" height="4" rx="1" fill="#FFD27A"/></svg></div></div>
 </section>
 
 <!-- ===== ROTA ===== -->
-<section class="sec rota" id="rota">
+<section class="sec w rota" id="rota">
   <div class="wrap">
     <div>
-      <h2 class="serif">Jandira → Barueri → Osasco</h2>
+      <div class="carimbo"><span class="num">2</span><span class="tag">Rota</span></div>
+      <h2>Jandira → Barueri → Osasco</h2>
       <p class="lead">Buscamos a turma em casa, em Jandira e Barueri, e levamos até a Fundação Bradesco, na Cidade de Deus, em Osasco. Ida e volta, todos os dias de aula.</p>
       <ol class="tl">
-        <span class="van" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="3"/><path d="M3 11h18M9 4v7M15 4v7"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="16.5" cy="19" r="1.5"/></svg></span>
-        <li class="stop"><span class="dot"></span><b>Jandira</b><small>Busca em casa, com a monitora</small><ul class="chips mini"><li>Centro</li><li>Jardim Tereza</li><li>Jardim Fátima</li></ul></li>
-        <li class="stop"><span class="dot"></span><b>Barueri</b><small>Busca em casa</small><ul class="chips mini"><li>Jardim Califórnia</li><li>Jardim Tupanci</li><li>Vila Engenho Novo</li><li>Jardim Silveira</li><li>Parque dos Camargos</li></ul></li>
-        <li class="stop"><span class="dot"></span><b>Fundação Bradesco</b><small>Chegada na escola, em Osasco</small></li>
+        <li class="stop"><span class="num">1</span><div><b>Jandira</b><small>Busca em casa</small><ul class="chips"><li>Centro</li><li>Jardim Tereza</li><li>Jardim Fátima</li><li>Jardim Gabriela</li><li>Jardim Alvorada</li><li>Jardim Europa</li><li>Parque Nova Jandira</li><li>Jardim São Luiz</li></ul></div></li>
+        <li class="stop"><span class="num">2</span><div><b>Barueri</b><small>Busca em casa</small><ul class="chips"><li>Jardim Califórnia</li><li>Jardim Tupanci</li><li>Vila Engenho Novo</li><li>Jardim Silveira</li><li>Parque dos Camargos</li><li>Parque Viana</li><li>Jardim Maria Helena</li><li>Jardim Belval</li><li>Jardim Mutinga</li><li>Parque Imperial</li></ul></div></li>
+        <li class="stop"><span class="num">3</span><div><b>Fundação Bradesco</b><small>Chegada na escola, em Osasco</small></div></li>
       </ol>
       <div class="extras">
         <div>
           <p class="label">Turmas</p>
-          <ul class="chips"><li>Manhã</li><li>Tarde</li></ul>
+          <ul class="chips" style="margin-top:0"><li>Manhã</li><li>Tarde</li></ul>
         </div>
         <div>
           <p class="label">Segurança</p>
           <p class="nota">Van vistoriada pelas prefeituras de Jandira e Osasco. Revisão e manutenção feitas com frequência, para levar suas crianças com segurança.</p>
         </div>
       </div>
-      <a class="ghost" href="https://www.google.com/maps/dir/Jandira,+SP/Barueri,+SP/Fundação+Bradesco,+Cidade+de+Deus,+Osasco+-+SP" target="_blank" rel="noopener">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-        Ver rota no Google Maps
-      </a>
+      <a class="pill lt" href="https://www.google.com/maps/dir/Terminal+Nossa+Senhora+de+Fátima,+Jandira+-+SP/Parque+Viana,+Barueri+-+SP/Jardim+Tupanci,+Barueri+-+SP/Vila+Engenho+Novo,+Barueri+-+SP/Fundação+Bradesco,+Cidade+de+Deus,+Osasco+-+SP" target="_blank" rel="noopener"><span class="roll"><i>Ver rota no Google Maps</i><i aria-hidden="true">Ver rota no Google Maps</i></span><span class="circ"><svg aria-hidden="true"><use href="#seta"/></svg></span></a>
     </div>
     <div class="mapwrap">
       <div id="mapa" aria-label="Mapa com a rota da van"></div>
@@ -365,39 +479,89 @@ h2.serif{margin:14px 0 0;font-size:clamp(36px,5vw,64px);line-height:1;letter-spa
   </div>
 </section>
 
-<!-- ===== VALE DESCONTO ===== -->
-<section class="vale" id="vale">
-  <p class="label">Presente de boas-vindas</p>
-  <div class="scene" id="scene" role="button" tabindex="0" aria-label="Abrir a caixa do vale desconto">
-    <div class="box">
-      <div class="shadow"></div><div class="base"></div><div class="insert"></div>
-      <div class="card" id="card">
-        <div class="edge"></div>
-        <div class="face"><div class="spec"></div><div class="chip"></div><div class="tag">VALE DESCONTO</div><div class="mono">VP</div><div class="foot-card"><span>20% · PRIMEIRA MENSALIDADE</span><span>TURMA 2027</span></div></div>
-        <div class="back"><span class="txt">VAN ESCOLAR · TIA PATRÍCIA E TIO VITOR</span><span class="vp2">VP</span></div>
-      </div>
-      <div class="wall wf"></div><div class="wall wb"></div><div class="wall wl"></div><div class="wall wr"></div>
-      <div class="lid"><div class="out"></div><div class="inn"></div></div>
-      <div class="ear el"></div><div class="ear er"></div>
+<!-- ===== CUIDADOS — RASCUNHO: confira os textos com a Tia Patrícia ===== -->
+<section class="sec g cuid" id="cuidados">
+  <div class="wrap">
+    <div class="carimbo"><span class="num">3</span><span class="tag">Como funciona</span></div>
+    <h2>Cuidado em cada parte do caminho.</h2>
+    <p class="lead">Da porta de casa até a saída da escola, sempre tem alguém de olho na turma.</p>
+    <p class="grupo">Na van</p>
+    <div class="cuis">
+      <div class="cui rv" style="--d:0s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17M3 21h18M15 12h.01"/></svg><b>Porta automática</b><span>A porta abre e fecha sozinha na hora de subir e descer.</span></div>
+      <div class="cui rv" style="--d:.1s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/></svg><b>Pode lanchar</b><span>O caminho é um pouco longo, então pode comer na van. Mande a lancheira.</span></div>
+    </div>
+    <p class="grupo">Na escola</p>
+    <div class="cuis tres">
+      <div class="cui rv" style="--d:0s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><b>Monitores lá dentro</b><span>A equipe da Tia Patrícia busca as crianças dentro da Fundação, para ninguém se perder.</span></div>
+      <div class="cui rv" style="--d:.1s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="8" rx="1"/><path d="M12 12v9M8 21h8"/></svg><b>Fila com placa</b><span>A turma espera numa fila própria, sinalizada com a placa da Tia Patrícia.</span></div>
+      <div class="cui colete rv" style="--d:.2s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3 6 4.5V20a1 1 0 0 0 1 1h4V9Z"/><path d="M15 3l3 1.5V20a1 1 0 0 1-1 1h-4V9Z"/><path d="M6 14h5M13 14h5"/></svg><b>Colete da van</b><span>Cada transporte escolar tem uma cor. Com o colete, a turma não se mistura com as outras.</span></div>
     </div>
   </div>
-  <div class="copy">
-    <h2 class="serif">Seu vale desconto VP</h2>
-    <p>Fechou a vaga até dezembro? O primeiro mês sai com 20% de desconto. É só mostrar esse cartão no WhatsApp na hora de combinar.</p>
-    <a class="pill" data-wa="patricia" data-msg="vale" href="#" target="_blank" rel="noopener">Resgatar no WhatsApp</a>
+</section>
+
+<!-- ===== VALE DESCONTO (ilha escura) ===== -->
+<section class="vale" id="vale">
+  <div class="isla">
+    <p class="label">Presente de boas-vindas</p>
+    <div class="scene" id="scene" role="button" tabindex="0" aria-label="Abrir a caixa do vale desconto">
+      <div class="box">
+        <div class="shadow"></div><div class="base"></div><div class="insert"></div>
+        <div class="card" id="card">
+          <div class="edge"></div>
+          <div class="face"><div class="spec"></div><div class="chip"></div><div class="tagc">VALE DESCONTO</div><div class="mono">PV</div><div class="foot-card"><span>20% · PRIMEIRA MENSALIDADE</span><span>TURMA 2027</span></div></div>
+          <div class="back"><span class="txt">VAN ESCOLAR · TIA PATRÍCIA E TIO VITOR</span><span class="vp2">PV</span></div>
+        </div>
+        <div class="wall wf"></div><div class="wall wb"></div><div class="wall wl"></div><div class="wall wr"></div>
+        <div class="lid"><div class="out"></div><div class="inn"></div></div>
+        <div class="ear el"></div><div class="ear er"></div>
+      </div>
+    </div>
+    <div class="copy">
+      <h2>Seu vale desconto PV</h2>
+      <p>Para novas crianças que começam na van em janeiro de 2027: a primeira mensalidade sai com 20% de desconto. Válido só para novos contratos. É só mostrar esse cartão no WhatsApp na hora de fechar.</p>
+      <a class="cut gold" data-wa="patricia" data-msg="vale" href="#" target="_blank" rel="noopener">Resgatar no WhatsApp <svg class="arr" aria-hidden="true"><use href="#seta"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DÚVIDAS COMUNS — RASCUNHO: confira as respostas com a Tia Patrícia ===== -->
+<section class="sec w faq" id="duvidas">
+  <div class="wrap">
+    <div>
+      <div class="carimbo"><span class="num">4</span><span class="tag">Dúvidas comuns</span></div>
+      <h2>O que os pais sempre perguntam</h2>
+      <p class="lead">Ficou alguma dúvida que não está aqui? Chama no WhatsApp que a gente responde.</p>
+    </div>
+    <div class="lista">
+      <details><summary>Em quais bairros a van passa?</summary><p class="resp">Buscamos em casa em Jandira e Barueri, nos bairros que estão na Rota, e levamos até a Fundação Bradesco, na Cidade de Deus, em Osasco. Se o seu bairro não está na lista, chama no WhatsApp que a gente vê se dá para atender.</p></details>
+      <details><summary>Tem turma de manhã e de tarde?</summary><p class="resp">Sim, as duas. Ida e volta, todos os dias de aula.</p></details>
+      <details><summary>Pode levar lanche na van?</summary><p class="resp">Pode. O caminho até a Fundação é um pouco longo, então a criança pode comer na van. É só mandar a lancheira.</p></details>
+      <details><summary>Como a criança encontra a van na saída?</summary><p class="resp">Nossos monitores buscam as crianças dentro da escola. A turma espera numa fila própria, com a placa da Tia Patrícia, e usa o colete da van para não se misturar com os outros transportes.</p></details>
+      <details><summary>A van é vistoriada?</summary><p class="resp">Sim. A van é vistoriada pelas prefeituras de Jandira e Osasco, e a revisão e a manutenção são feitas com frequência.</p></details>
+      <details><summary>Como funciona o vale desconto?</summary><p class="resp">Para novas crianças que começam em janeiro de 2027, a primeira mensalidade sai com 20% de desconto. Vale só para contratos novos. É só mostrar o cartão do site na hora de fechar pelo WhatsApp.</p></details>
+      <details><summary>E se meu filho faltar um dia?</summary><p class="resp">Avise com antecedência pelo WhatsApp, inclusive quando for atestado médico. Assim a van não espera à toa e a rota não atrasa para as outras crianças.</p></details>
+      <details><summary>Tem contrato? E nas férias, paga?</summary><p class="resp">Tem. O contrato é de 12 meses, e as mensalidades de janeiro e fevereiro também são pagas, como nos outros meses. O pagamento é em dinheiro ou Pix.</p></details>
+      <details><summary>Quantas crianças vão na van?</summary><p class="resp">A van tem lugar para 23 crianças. Por isso as vagas por turma são limitadas: se tiver interesse, vale fazer o pré-cadastro logo.</p></details>
+    </div>
   </div>
 </section>
 
 <!-- ===== PRÉ-CADASTRO ===== -->
-<section class="sec cadastro" id="vaga">
+<section class="sec g cadastro" id="vaga">
   <div class="wrap">
     <div>
-      <p class="label">Pré-cadastro</p>
-      <h2 class="serif">Quero uma vaga</h2>
+      <div class="carimbo"><span class="num">5</span><span class="tag">Pré-cadastro</span></div>
+      <h2>Quero uma vaga</h2>
       <p class="lead">Preenche aqui e a gente responde no WhatsApp se tem vaga na turma e no bairro. Temos turmas de manhã e de tarde.</p>
     </div>
+    <div class="carta" id="carta">
+    <div class="voa">
     <form id="form-vaga">
       <label class="campo">Seu nome<input name="nome" required autocomplete="name"></label>
+      <div class="row2">
+        <label class="campo">Nome da criança<input name="crianca" required></label>
+        <label class="campo">Idade<input name="idade" inputmode="numeric" placeholder="Ex.: 7"></label>
+      </div>
       <div class="row2">
         <label class="campo">WhatsApp<input name="tel" type="tel" required autocomplete="tel" placeholder="(11) 9 0000-0000"></label>
         <label class="campo">E-mail<input name="email" type="email" autocomplete="email"></label>
@@ -411,33 +575,39 @@ h2.serif{margin:14px 0 0;font-size:clamp(36px,5vw,64px);line-height:1;letter-spa
         <label class="campo">Série em 2027<select name="serie" id="serie" required><option value="">Escolher…</option></select></label>
         <fieldset><legend>Turma</legend><div class="rads"><label class="rad"><input type="radio" name="turma" value="Manhã" required>Manhã</label><label class="rad"><input type="radio" name="turma" value="Tarde">Tarde</label></div></fieldset>
       </div>
-      <button class="pill" type="submit">Enviar pelo WhatsApp</button>
+      <button class="pill or" type="submit"><span class="roll"><i>Enviar pelo WhatsApp</i><i aria-hidden="true">Enviar pelo WhatsApp</i></span><span class="circ"><svg aria-hidden="true"><use href="#seta"/></svg></span></button>
       <p class="priv">Seus dados vão direto para o WhatsApp da Tia Patrícia. O site não guarda nada.</p>
     </form>
+    <div class="env env-back" aria-hidden="true"></div>
+    <div class="env env-front" aria-hidden="true"><div class="env-pocket"></div><div class="env-flap"></div><div class="env-selo">PV</div></div>
+    </div>
+    <p class="envio-msg" aria-live="polite">Abrindo o WhatsApp…</p>
+    </div>
   </div>
 </section>
 
-<!-- ===== RODAPÉ ===== -->
+<!-- ===== RODAPÉ (cartão escuro) ===== -->
+<div class="fwrap">
 <footer class="foot" id="contato">
   <div class="wrap">
     <div>
       <p class="label">Fale com a gente</p>
-      <h2 class="serif">Bora garantir a vaga?</h2>
+      <h2>Bora garantir a vaga?</h2>
       <div class="contatos">
-        <a class="ct" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener"><span><span class="nm">Tia Patrícia</span><span class="tel" data-tel="patricia"></span></span><span class="wa"><svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>WhatsApp</span></a>
-        <a class="ct" data-wa="vitor" data-msg="padrao" href="#" target="_blank" rel="noopener"><span><span class="nm">Tio Vitor</span><span class="tel" data-tel="vitor"></span></span><span class="wa"><svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>WhatsApp</span></a>
-        <a class="ct" href="https://www.instagram.com/van_tiapatricia/" target="_blank" rel="noopener"><span><span class="nm">Instagram</span><span class="tel">@van_tiapatricia</span></span><span class="wa ig">Seguir<svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></span></a>
+        <a class="ct" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener"><span><span class="nm">Tia Patrícia</span><span class="tel" data-tel="patricia"></span></span><span class="cut zap cut-xs"><svg aria-hidden="true"><use href="#zap"/></svg>WhatsApp</span></a>
+        <a class="ct" data-wa="vitor" data-msg="padrao" href="#" target="_blank" rel="noopener"><span><span class="nm">Tio Vitor</span><span class="tel" data-tel="vitor"></span></span><span class="cut zap cut-xs"><svg aria-hidden="true"><use href="#zap"/></svg>WhatsApp</span></a>
+        <a class="ct" href="https://www.instagram.com/van_tiapatricia/" target="_blank" rel="noopener"><span><span class="nm">Instagram</span><span class="tel">@van_tiapatricia</span></span><span class="cut wh cut-xs">Seguir<svg class="arr" aria-hidden="true"><use href="#seta"/></svg></span></a>
       </div>
     </div>
     <div class="info">
       <p class="label">Onde atendemos</p>
       <ul>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Jandira (Centro, Jardim Tereza, Jardim Fátima) e Barueri (Jardim Califórnia, Jardim Tupanci, Vila Engenho Novo, Jardim Silveira, Parque dos Camargos)</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Jandira (Centro, Jardim Tereza, Jardim Fátima, Jardim Gabriela, Jardim Alvorada, Jardim Europa, Parque Nova Jandira, Jardim São Luiz) e Barueri (Jardim Califórnia, Jardim Tupanci, Vila Engenho Novo, Jardim Silveira, Parque dos Camargos, Parque Viana, Jardim Maria Helena, Jardim Belval, Jardim Mutinga, Parque Imperial)</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12M9 21v-6h6v6"/></svg>Fundação Bradesco, Osasco</li>
       </ul>
       <p class="label">Atendimento</p>
       <ul>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Seg a sex, 7h às 19h</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Seg a sex, 8h às 20h</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Ligação ou WhatsApp</li>
       </ul>
     </div>
@@ -449,6 +619,7 @@ h2.serif{margin:14px 0 0;font-size:clamp(36px,5vw,64px);line-height:1;letter-spa
     </a>
   </div>
 </footer>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -457,13 +628,15 @@ const CONFIG = {
   patricia: { nome: 'Tia Patrícia', tel: '+55 11 99692-9358', wa: '5511996929358' }, // CONFIRA
   vitor:    { nome: 'Tio Vitor',    tel: '+55 11 98406-1754', wa: '5511984061754' }, // CONFIRA
   msg:     'Oi! Vi o site da van e quero saber sobre vagas para 2027.',
-  msgVale: 'Oi! Quero resgatar o vale desconto VP.',
+  msgVale: 'Oi! Quero resgatar o vale desconto PV (20% na primeira mensalidade, novo contrato para janeiro de 2027).',
   msgVaga: 'Oi! Quero uma vaga na van para 2027. Seguem meus dados:',
   series: ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'],
   paradas: [
-    { nome: 'Jandira',           lat: -23.5277, lng: -46.9028 },
-    { nome: 'Barueri',           lat: -23.5106, lng: -46.8761 },
-    { nome: 'Fundação Bradesco', lat: -23.5360, lng: -46.7815 }, // CONFIRA no Google Maps (botão direito na escola)
+    { nome: 'Terminal Fátima',   lat: -23.5547, lng: -46.9056 }, // Terminal N. Sra. de Fátima, Jandira
+    { nome: 'Parque Viana',      lat: -23.5399, lng: -46.8701 }, // Barueri
+    { nome: 'Jardim Tupanci',    lat: -23.4945, lng: -46.8701 }, // Barueri
+    { nome: 'Engenho Novo',      lat: -23.4892, lng: -46.8897 }, // Barueri
+    { nome: 'Fundação Bradesco', lat: -23.5456, lng: -46.7716 }, // Osasco (conferido no Google Maps)
   ],
 };
 
@@ -476,24 +649,34 @@ document.querySelectorAll('[data-wa]').forEach(a => {
 document.querySelectorAll('[data-tel]').forEach(s => { s.textContent = CONFIG[s.dataset.tel].tel; });
 document.getElementById('ano').textContent = new Date().getFullYear();
 
-/* =================== MENU FIXO E MENU DO CELULAR =================== */
-const nav = document.getElementById('nav'), burger = document.getElementById('burger');
-const navScroll = () => nav.classList.toggle('solid', scrollY > 40);
+/* =================== BARRA FIXA E MENU DO CELULAR =================== */
+const nav = document.getElementById('nav'), hero = document.getElementById('top'), burger = document.getElementById('burger');
+const navScroll = () => nav.classList.toggle('on', scrollY > hero.offsetHeight - 80);
 addEventListener('scroll', navScroll, { passive: true }); navScroll();
-function menu(on) { document.body.classList.toggle('menu-on', on); burger.setAttribute('aria-expanded', on); burger.setAttribute('aria-label', on ? 'Fechar menu' : 'Abrir menu'); }
-burger.onclick = () => menu(!document.body.classList.contains('menu-on'));
+function menu(on) {
+  document.body.classList.toggle('menu-on', on);
+  document.querySelectorAll('[data-menu]').forEach(b => b.setAttribute('aria-expanded', on));
+  burger.textContent = on ? 'Fechar' : 'Menu';
+}
+document.querySelectorAll('[data-menu]').forEach(b => b.addEventListener('click', () => menu(!document.body.classList.contains('menu-on'))));
+document.getElementById('sheet-bg').addEventListener('click', () => menu(false));
 document.querySelectorAll('#menu a').forEach(a => a.addEventListener('click', () => menu(false)));
 addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); });
 
-/* =================== MAPA (satélite + rota real + van) =================== */
+/* =================== MAPA (cinza escuro + rota real) =================== */
 async function iniciarMapa() {
   const P = CONFIG.paradas, badge = document.getElementById('kmbadge');
   const map = L.map('mapa', { scrollWheelZoom: false, dragging: !L.Browser.mobile });
-  const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagens © Esri, Maxar, Earthstar Geographics' });
-  const ruas = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
-  const nomes = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
-  sat.addTo(map); nomes.addTo(map);
-  L.control.layers({ 'Satélite': sat, 'Mapa de ruas': ruas }, { 'Nomes': nomes }).addTo(map);
+  const escuro = L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Esri, HERE, Garmin, © OpenStreetMap' }),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 })
+  ]);
+  const sat = L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagens © Esri, Maxar, Earthstar Geographics' }),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+  ]);
+  escuro.addTo(map);
+  L.control.layers({ 'Mapa escuro': escuro, 'Satélite': sat }).addTo(map);
 
   let coords = P.map(p => [p.lat, p.lng]);
   try {
@@ -506,95 +689,79 @@ async function iniciarMapa() {
     } else badge.remove();
   } catch (e) { badge.remove(); }
 
-  L.polyline(coords, { color: '#fff', weight: 10, opacity: .6 }).addTo(map);
-  const linha = L.polyline(coords, { color: '#F4845F', weight: 5, opacity: .95 }).addTo(map);
-  map.fitBounds(linha.getBounds(), { padding: [40, 40] });
-  P.forEach((p, i) => L.circleMarker([p.lat, p.lng], { radius: 9, color: '#F4845F', weight: 3, fillColor: '#fff', fillOpacity: 1 }).bindTooltip(`${i + 1}. ${p.nome}`, { permanent: true, direction: 'top', offset: [0, -10] }).addTo(map));
-
-  const VAN = '<svg viewBox="0 0 40 24" width="40" height="24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="1" width="6" height="4" rx="1" fill="#2B2520"/><rect x="25" y="1" width="6" height="4" rx="1" fill="#2B2520"/><rect x="3" y="19" width="6" height="4" rx="1" fill="#2B2520"/><rect x="25" y="19" width="6" height="4" rx="1" fill="#2B2520"/><rect x="2" y="4" width="33" height="16" rx="5" fill="#fff" stroke="#2B2520" stroke-width="1.5"/><rect x="27" y="6" width="6" height="12" rx="2" fill="#C9E1F3"/><rect x="7" y="10" width="16" height="4" rx="1" fill="#F4845F"/></svg>';
-  const van = L.marker(coords[0], { icon: L.divIcon({ className: '', html: `<div class="vanmk">${VAN}</div>`, iconSize: [40, 24], iconAnchor: [20, 12] }), zIndexOffset: 1000 }).addTo(map);
-  if (reduce || coords.length < 2) return;
-
-  const acc = [0];
-  for (let i = 1; i < coords.length; i++) acc.push(acc[i - 1] + map.distance(coords[i - 1], coords[i]));
-  const total = acc[acc.length - 1];
-  const stopsD = P.map(p => { let b = 0, dm = Infinity; coords.forEach((c, i) => { const d = map.distance(c, [p.lat, p.lng]); if (d < dm) { dm = d; b = i; } }); return acc[b]; });
-  stopsD[0] = 0; stopsD[stopsD.length - 1] = total;
-  const MOVE = 24000, PAUSE = 2000, fases = [];
-  for (let i = 0; i < stopsD.length; i++) { fases.push({ ms: PAUSE, de: stopsD[i], ate: stopsD[i] }); if (i < stopsD.length - 1) fases.push({ ms: MOVE * (stopsD[i + 1] - stopsD[i]) / total, de: stopsD[i], ate: stopsD[i + 1] }); }
-  const LOOP = fases.reduce((s, f) => s + f.ms, 0);
-  const distEm = t => { let r = t % LOOP; for (const f of fases) { if (r < f.ms) return f.de + (f.ate - f.de) * (r / f.ms); r -= f.ms; } return total; };
-  const t0 = performance.now();
-  (function anim(now) {
-    const d = distEm(now - t0); let i = 0;
-    while (i < acc.length - 2 && acc[i + 1] < d) i++;
-    const a = L.latLng(coords[i]), b = L.latLng(coords[i + 1]);
-    const f = (d - acc[i]) / Math.max(acc[i + 1] - acc[i], .001);
-    van.setLatLng([a.lat + (b.lat - a.lat) * f, a.lng + (b.lng - a.lng) * f]);
-    const pa = map.latLngToLayerPoint(a), pb = map.latLngToLayerPoint(b);
-    const el = van.getElement() && van.getElement().querySelector('.vanmk');
-    if (el) el.style.transform = `rotate(${Math.atan2(pb.y - pa.y, pb.x - pa.x) * 180 / Math.PI}deg)`;
-    requestAnimationFrame(anim);
-  })(performance.now());
+  L.polyline(coords, { color: '#F4845F', weight: 18, opacity: .12, interactive: false }).addTo(map);
+  L.polyline(coords, { color: '#F4845F', weight: 10, opacity: .25, interactive: false }).addTo(map);
+  const linha = L.polyline(coords, { color: '#F4845F', weight: 4, opacity: 1, interactive: false }).addTo(map);
+  L.polyline(coords, { color: '#FFE4D6', weight: 2, opacity: .9, dashArray: '2 12', className: 'rota-fluxo', interactive: false }).addTo(map);
+  map.fitBounds(linha.getBounds(), { padding: [50, 50] });
+  P.forEach((p, i) => L.marker([p.lat, p.lng], { keyboard: false, icon: L.divIcon({ className: '', html: `<span class="parada">${i + 1}</span>`, iconSize: [26, 26], iconAnchor: [13, 13] }) }).bindTooltip(p.nome, { permanent: true, direction: 'top', offset: [0, -16], className: 'etq' }).addTo(map));
 }
 iniciarMapa();
 
-/* =================== VALE DESCONTO (caixa + cartão) =================== */
+/* =================== VALE DESCONTO (caixa + cartão que gira com a rolagem) =================== */
 const vale = document.getElementById('vale'), scene = document.getElementById('scene'), card = document.getElementById('card');
-let live = false, hover = false, timer = null; const tv0 = performance.now();
+let live = false, hover = false, timer = null, spin = 0, mrx = 0, mry = 0, mmy = 50; const tv0 = performance.now();
 function tilt(rx, ry, mx, my) { card.style.setProperty('--rx', rx.toFixed(2) + 'deg'); card.style.setProperty('--ry', ry.toFixed(2) + 'deg'); card.style.setProperty('--mx', mx.toFixed(1) + '%'); card.style.setProperty('--my', my.toFixed(1) + '%'); }
-function abrir() { if (vale.classList.contains('open')) return; vale.classList.add('open'); if (reduce) return; clearTimeout(timer); timer = setTimeout(() => { live = true; vale.classList.add('live'); }, 2500); }
-function fechar() { clearTimeout(timer); live = false; hover = false; vale.classList.remove('live'); tilt(0, 0, 50, 50); vale.classList.remove('open'); }
+function abrir() { if (vale.classList.contains('open')) return; vale.classList.add('open'); if (reduce) return; clearTimeout(timer); timer = setTimeout(() => { spin = 0; live = true; vale.classList.add('live'); }, 2500); }
+function fechar() { clearTimeout(timer); live = false; hover = false; spin = 0; vale.classList.remove('live'); tilt(0, 0, 50, 50); vale.classList.remove('open'); }
 scene.addEventListener('click', () => vale.classList.contains('open') ? fechar() : abrir());
 scene.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scene.click(); } });
-scene.addEventListener('mousemove', e => { if (!live) return; hover = true; const r = scene.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; tilt(-y * 28, x * 44, 50 + x * 70, 50 + y * 70); });
+scene.addEventListener('mousemove', e => { if (!live) return; hover = true; const r = scene.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; mrx = -y * 24; mry = x * 36; mmy = 50 + y * 70; });
 scene.addEventListener('mouseleave', () => { hover = false; });
-(function idle(now) { if (live && !hover) { const t = (now - tv0) / 1000; tilt(Math.sin(t * .9) * 6, Math.sin(t * .55) * 24, 50 + Math.sin(t * .55) * 38, 50 - Math.sin(t * .9) * 22); } requestAnimationFrame(idle); })(performance.now());
+(function loop(now) {
+  if (live) {
+    const r = vale.getBoundingClientRect(), wh = innerHeight;
+    const p = Math.min(1, Math.max(0, (wh - r.top) / (wh + r.height))); // 0 = entrando por baixo, .5 = centro da tela, 1 = saindo por cima
+    const alvo = (p - .5) * 2 * 180;                                     // -180° … 0° (de frente) … +180°
+    spin += (alvo - spin) * .1;                                          // suaviza o giro
+    const t = (now - tv0) / 1000;
+    const rx = (hover ? mrx : Math.sin(t * .9) * 4) + (p - .5) * -16;
+    const ry = spin + (hover ? mry : Math.sin(t * .55) * 8);
+    const luz = Math.sin(ry * Math.PI / 180);                            // a luz fica parada, o cartão gira
+    tilt(rx, ry, 50 - luz * 40, hover ? mmy : 50 - Math.sin(t * .9) * 20);
+  }
+  requestAnimationFrame(loop);
+})(performance.now());
 const io = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { vale.classList.add('in'); setTimeout(abrir, reduce ? 0 : 1100); io.disconnect(); } }); }, { threshold: .35 });
 io.observe(vale);
 
-/* =================== NOSSA HISTÓRIA (anima os celulares ao entrar na tela) =================== */
+/* =================== MEDALHA 3D (gira sozinha, com o dedo ou o mouse) =================== */
+const selo = document.getElementById('selo'), moeda = document.getElementById('moeda');
+if (selo && !reduce) {
+  let ry = 0, rx = -8, vy = .35, drag = false, lx = 0, ly = 0;
+  selo.addEventListener('pointerdown', e => { drag = true; lx = e.clientX; ly = e.clientY; selo.setPointerCapture(e.pointerId); });
+  selo.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; ry += dx * .6; rx = Math.max(-40, Math.min(40, rx - dy * .3)); vy = Math.max(-30, Math.min(30, dx * .6)); });
+  const solta = () => { drag = false; };
+  selo.addEventListener('pointerup', solta); selo.addEventListener('pointercancel', solta);
+  (function giro() { if (!drag) { ry += vy; vy += (.35 - vy) * .02; rx += (-8 - rx) * .03; } moeda.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`; requestAnimationFrame(giro); })();
+}
+
+/* =================== FOTOS E CARTÕES (sobem ao entrar na tela) =================== */
 if ('IntersectionObserver' in window) {
-  const fones = document.querySelectorAll('.phone');
-  fones.forEach(p => p.classList.add('wait'));
-  const ioF = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); ioF.unobserve(e.target); } }); }, { threshold: .3 });
-  fones.forEach(p => ioF.observe(p));
+  const itens = document.querySelectorAll('.rv');
+  itens.forEach(e => e.classList.add('esp'));
+  const ioR = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); ioR.unobserve(e.target); } }); }, { threshold: .2 });
+  itens.forEach(e => ioR.observe(e));
 }
 
-/* =================== DEPOIMENTO (sol, nuvens e van acompanham a rolagem) =================== */
-const q = document.getElementById('quote');
-if (q && !reduce) {
-  const c1 = q.querySelector('.c1'), c2 = q.querySelector('.c2'), sun = q.querySelector('.sun'), rv = q.querySelector('.roadvan');
-  const cur = { c: -200, s: 0, v: 0 }, tgt = { c: -200, s: 0, v: 0 };
-  const lerp = (a, b, f) => a + (b - a) * f;
-  (function loop() {
-    const r = q.getBoundingClientRect(), wh = innerHeight;
-    if (r.bottom > 0 && r.top < wh) {
-      const p = Math.min(1, Math.max(0, (wh - r.top) / (wh + r.height)));
-      tgt.c = p > .12 && p < .92 ? 0 : -200; tgt.s = (p - .5) * -140; tgt.v = p;
-      cur.c = lerp(cur.c, tgt.c, .04); cur.s = lerp(cur.s, tgt.s, .06); cur.v = lerp(cur.v, tgt.v, .08);
-      const op = 1 - Math.min(1, Math.abs(cur.c) / 200), cy = cur.v * -50;
-      c1.style.transform = `translate3d(${cur.c}px,${cy}px,0)`; c1.style.opacity = op;
-      c2.style.transform = `translate3d(${-cur.c}px,${cy}px,0) scaleX(-1)`; c2.style.opacity = op;
-      sun.style.transform = `translate(-50%,calc(50% + ${cur.s}px))`;
-      rv.style.transform = `translate(${-120 + cur.v * (q.offsetWidth + 240)}px,-50%)`;
-    }
-    requestAnimationFrame(loop);
-  })();
-}
-
-/* =================== PRÉ-CADASTRO (monta a mensagem e abre o WhatsApp) =================== */
-const formVaga = document.getElementById('form-vaga');
+/* =================== PRÉ-CADASTRO (vira carta, fecha e abre o WhatsApp) =================== */
+const formVaga = document.getElementById('form-vaga'), carta = document.getElementById('carta');
 if (formVaga) {
   const selSerie = document.getElementById('serie');
   CONFIG.series.forEach(s => { const o = document.createElement('option'); o.textContent = s; selSerie.appendChild(o); });
+  const abrirZap = url => { if (!window.open(url, '_blank')) location.href = url; };
   formVaga.addEventListener('submit', e => {
     e.preventDefault();
+    if (carta.classList.contains('enviando')) return;
     const f = new FormData(formVaga), v = k => (f.get(k) || '').toString().trim() || '—';
-    const txt = [CONFIG.msgVaga, '', 'Nome: ' + v('nome'), 'WhatsApp: ' + v('tel'), 'E-mail: ' + v('email'), 'Rua: ' + v('rua'), 'CEP: ' + v('cep'), 'Referência: ' + v('ref'), 'Série: ' + v('serie'), 'Turma: ' + v('turma')].join('\n');
+    const txt = [CONFIG.msgVaga, '', 'Nome: ' + v('nome'), 'Criança: ' + v('crianca'), 'Idade: ' + v('idade'), 'WhatsApp: ' + v('tel'), 'E-mail: ' + v('email'), 'Rua: ' + v('rua'), 'CEP: ' + v('cep'), 'Referência: ' + v('ref'), 'Série: ' + v('serie'), 'Turma: ' + v('turma')].join('\n');
     const url = 'https://wa.me/' + CONFIG.patricia.wa + '?text=' + encodeURIComponent(txt);
-    if (!window.open(url, '_blank')) location.href = url;
+    if (reduce) { abrirZap(url); return; }
+    carta.classList.add('enviando');
+    setTimeout(() => abrirZap(url), 2000);
+    setTimeout(() => carta.classList.remove('enviando'), 6000);
   });
+  addEventListener('pageshow', () => carta.classList.remove('enviando'));
 }
 </script>
 </body>
