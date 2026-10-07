@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Van Escolar Tia Patrícia e Tio Vitor · Jandira, Barueri e Osasco</title>
+<meta name="description" content="Transporte escolar de Jandira e Barueri até a Fundação Bradesco, em Osasco. Centro, Jardim Tereza, Jardim Fátima, Jardim Califórnia, Jardim Tupanci, Vila Engenho Novo, Jardim Silveira e Parque dos Camargos. Turmas de manhã e tarde. Van vistoriada.">
+<meta name="theme-color" content="#0A0608">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg0:#0A0608;--bg1:#15100F;--bg2:#1F1819;--line:rgba(255,255,255,.1);--tx:#FFF8F2;--mu:#B9ADA3;--mu2:#8A7F74;--ac:#F4845F;--gold:#D9BB63;--zap:#25D366}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg0);color:var(--tx);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.menu-on{overflow:hidden}
+.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
+a{color:inherit}
+button{font:inherit}
+section,footer{position:relative;scroll-margin-top:72px}
+.label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;margin:0;color:var(--ac)}
+.ico{width:18px;height:18px;flex:none}
+.wrap{max-width:1152px;margin:0 auto}
+.sec{padding:96px 16px;border-top:1px solid var(--line)}
+h2.serif{margin:14px 0 0;font-size:clamp(36px,5vw,64px);line-height:1;letter-spacing:-.02em}
+.lead{margin:16px 0 0;max-width:440px;font-size:15px;line-height:1.7;color:var(--mu)}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--tx);color:#0A0608;border-radius:999px;padding:14px 28px;font-size:14px;font-weight:500;letter-spacing:.02em;text-decoration:none;border:0;cursor:pointer;transition:transform .3s,background .3s;box-shadow:0 0 20px rgba(255,255,255,.25),0 0 40px rgba(255,255,255,.08)}
+.pill:hover{transform:translateY(-2px);background:#fff}
+.ghost{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.35);color:var(--tx);border-radius:999px;padding:13px 24px;font-size:14px;font-weight:500;text-decoration:none;transition:border-color .3s,background .3s}
+.ghost:hover{border-color:#fff;background:rgba(255,255,255,.06)}
+.logo{width:46px;height:26px;flex:none}
+@media(min-width:1024px){.sec{padding:128px 40px}}
+
+/* ===== MENU FIXO ===== */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;transition:background .4s,padding .4s}
+.nav.solid{background:rgba(10,6,8,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px 20px}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;position:relative;z-index:2}
+.brand-t{font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;line-height:1.2}
+.brand-t small{display:block;font-size:9px;letter-spacing:.22em;color:rgba(255,248,242,.6);margin-bottom:2px}
+.links{display:none;gap:40px;position:absolute;left:50%;transform:translateX(-50%)}
+.links a{font-size:13px;letter-spacing:.06em;color:rgba(255,248,242,.75);text-decoration:none;transition:color .3s}
+.links a:hover{color:#fff}
+.nav .pill{display:none;padding:11px 22px;font-size:13px;box-shadow:none}
+.burger{width:40px;height:40px;border:0;background:none;cursor:pointer;position:relative;padding:0;z-index:2}
+.burger span{position:absolute;left:8px;width:24px;height:2px;background:#fff;border-radius:2px;transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .3s}
+.burger span:nth-child(1){top:11px}.burger span:nth-child(2){top:19px}.burger span:nth-child(3){top:27px}
+.menu-on .burger span:nth-child(1){transform:translateY(8px) rotate(45deg)}
+.menu-on .burger span:nth-child(2){opacity:0;transform:scaleX(0)}
+.menu-on .burger span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+.menu{position:fixed;top:0;right:0;bottom:0;z-index:90;width:85%;max-width:340px;background:rgba(10,6,8,.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-left:1px solid var(--line);padding:100px 32px 40px;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .5s cubic-bezier(.22,1,.36,1)}
+.menu-on .menu{transform:none}
+.menu a{font-family:'Instrument Serif',serif;font-size:34px;line-height:1.2;margin:0 0 22px;color:var(--tx);text-decoration:none;opacity:0;transform:translateX(24px);transition:opacity .5s,transform .5s cubic-bezier(.22,1,.36,1)}
+.menu-on .menu a{opacity:1;transform:none;transition-delay:.15s}
+.menu-on .menu a:nth-child(2){transition-delay:.225s}.menu-on .menu a:nth-child(3){transition-delay:.3s}
+.menu .pill{margin:auto 0 0;font-family:Inter,sans-serif;font-size:14px;justify-content:center}
+.menu-on .menu .pill{transition-delay:.45s}
+@media(min-width:900px){.nav{padding:22px 48px}.nav.solid{padding:14px 48px}.links{display:flex}.nav .pill{display:inline-flex}.burger,.menu{display:none}}
+
+/* ===== HERO ===== */
+.hero{height:100vh;height:100svh;min-height:600px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 20px}
+.veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,8,.55) 0%,rgba(10,6,8,.35) 55%,#0A0608 100%)}
+.grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.35;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");background-size:200px 200px}
+.hero-c{position:relative;z-index:3;max-width:900px;margin-top:-40px}
+.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,248,242,.7);margin:0 0 24px}
+.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:clamp(44px,9vw,112px);line-height:.95;letter-spacing:-.025em;margin:0;text-shadow:0 0 40px rgba(255,255,255,.35),0 0 80px rgba(255,255,255,.15),0 0 120px rgba(255,255,255,.08)}
+.hero h1 em{color:#FFE4D6}
+.sub{margin:26px auto 0;max-width:520px;font-size:15px;line-height:1.7;color:rgba(255,248,242,.75)}
+.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:34px}
+.cue{position:absolute;left:40px;bottom:36px;z-index:3;display:none;align-items:center;gap:14px;font-size:12px;line-height:1.4;color:rgba(255,248,242,.6)}
+.cue i{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);position:relative}
+.cue i::after{content:'';position:absolute;left:50%;top:12px;width:1px;height:12px;background:#fff;animation:cue 1.8s ease-in-out infinite}
+@keyframes cue{0%,100%{transform:translate(-50%,0);opacity:1}50%{transform:translate(-50%,6px);opacity:.3}}
+@media(min-width:900px){.cue{display:flex}}
+
+/* ===== NOSSA HISTÓRIA (3 celulares) ===== */
+.hist{border-top:0}
+.phones{display:flex;flex-direction:column;align-items:center;gap:40px;margin-top:56px}
+.phone{--d:.1s;position:relative;width:clamp(200px,70vw,320px);aspect-ratio:390/844;container-type:inline-size}
+.phone.wait{opacity:0;transform:translateY(30px)}
+.phone.in{animation:subir .9s cubic-bezier(.16,1,.3,1) var(--d) both}
+@keyframes subir{to{opacity:1;transform:none}}
+.frame{position:relative;width:100%;height:100%;background:#000;border-radius:clamp(30px,4vw,54px);padding:clamp(6px,1vw,12px);box-shadow:0 25px 50px -12px rgba(0,0,0,.7)}
+.frame::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);pointer-events:none}
+.pbtn{position:absolute;width:3px;background:#404040;border-radius:2px}
+.pbtn.l1{left:-3px;top:19%;height:4.5%}.pbtn.l2{left:-3px;top:26%;height:7.3%}.pbtn.l3{left:-3px;top:35.5%;height:7.3%}.pbtn.r1{right:-3px;top:30.8%;height:11.4%}
+.screen{position:relative;width:100%;height:100%;border-radius:clamp(24px,3.2vw,44px);overflow:hidden;background:#0a0e1c}
+.screen img{position:absolute;left:0;top:0;width:100%;height:114%;object-fit:cover;object-position:center top}
+.fog{position:absolute;left:0;right:0;bottom:0;height:50%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);-webkit-mask:linear-gradient(to bottom,transparent 0%,#000 50%);mask:linear-gradient(to bottom,transparent 0%,#000 50%);pointer-events:none}
+.island{position:absolute;top:3%;left:50%;transform:translateX(-50%);width:30%;height:4%;background:#000;border-radius:999px;z-index:5}
+.toplabel{position:absolute;top:9.5%;left:7%;right:7%;font-size:3cqw;letter-spacing:.16em;text-transform:uppercase;opacity:.8;z-index:5;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.cap{position:absolute;left:7%;right:7%;bottom:6%;z-index:5}
+.ano{display:block;font-family:'Instrument Serif',serif;font-size:26cqw;line-height:.9;letter-spacing:-.02em;text-shadow:0 4px 24px rgba(0,0,0,.45)}
+.leg{display:block;margin-top:8px;font-size:3.2cqw;letter-spacing:.16em;text-transform:uppercase;opacity:.85}
+.wait .ano,.wait .leg{opacity:0;transform:translateY(14px);filter:blur(8px)}
+.in .ano{animation:surgir .9s cubic-bezier(.16,1,.3,1) calc(var(--d) + .4s) both}
+.in .leg{animation:surgir .9s cubic-bezier(.16,1,.3,1) calc(var(--d) + .6s) both}
+@keyframes surgir{to{opacity:1;transform:none;filter:blur(0)}}
+@media(min-width:768px){.phones{flex-direction:row;align-items:flex-end;justify-content:center;gap:2vw}.phone{width:min(25vw,42vh)}.phone:nth-child(2){--d:.3s;margin-bottom:-24px}.phone:nth-child(3){--d:.5s}}
+@media(min-width:1280px){.phone{width:min(28vw,48vh,350px)}}
+
+/* ===== DEPOIMENTO (amanhecer com paralaxe) ===== */
+.quote{min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:120px 20px 30vh;background:linear-gradient(180deg,#0A0608 0%,#1A1226 34%,#3B2545 62%,#B5633E 100%)}
+.sun{position:absolute;left:50%;bottom:20%;width:60vw;max-width:720px;aspect-ratio:1;border-radius:50%;transform:translate(-50%,50%);background:radial-gradient(circle,rgba(255,196,120,.55) 0%,rgba(255,150,90,.18) 40%,rgba(255,150,90,0) 70%);pointer-events:none;will-change:transform}
+.cloud{position:absolute;width:520px;height:120px;border-radius:999px;background:rgba(255,255,255,.07);filter:blur(16px);opacity:0;will-change:transform,opacity;pointer-events:none}
+.cloud::before,.cloud::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,.07)}
+.cloud::before{width:220px;height:220px;left:70px;top:-120px}
+.cloud::after{width:160px;height:160px;left:260px;top:-70px}
+.c1{left:-120px;bottom:38%}.c2{right:-160px;bottom:30%}
+.road{position:absolute;left:0;right:0;bottom:0;height:20%;background:#0A0608;border-top:1px solid rgba(255,255,255,.08)}
+.road::before{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:repeating-linear-gradient(90deg,rgba(255,248,242,.45) 0 40px,transparent 40px 80px)}
+.roadvan{position:absolute;left:0;top:50%;transform:translate(-120px,-50%);will-change:transform}
+.roadvan svg{display:block;width:84px;height:50px;filter:drop-shadow(0 10px 20px rgba(0,0,0,.5))}
+.quote blockquote{position:relative;z-index:5;margin:0;max-width:880px;text-align:center}
+.quote blockquote p{font-size:clamp(22px,4vw,42px);line-height:1.45;margin:0;text-shadow:0 2px 30px rgba(0,0,0,.35)}
+.quote cite{display:block;margin-top:28px;font-style:normal;font-size:14px;letter-spacing:.08em;color:rgba(255,248,242,.8)}
+@media(max-width:640px){.cloud{display:none}.roadvan svg{width:60px;height:36px}}
+
+/* ===== ROTA ===== */
+.rota .wrap{display:grid;gap:48px}
+.rota h2{margin-top:0}
+.tl{position:relative;list-style:none;margin:36px 0 0;padding:0 0 0 44px}
+.tl::before{content:'';position:absolute;left:15px;top:12px;bottom:12px;width:6px;border-radius:3px;background:var(--ac)}
+.van{position:absolute;left:6px;top:8px;z-index:2;width:24px;height:24px;border-radius:50%;background:var(--tx);color:#0A0608;display:flex;align-items:center;justify-content:center;animation:ride 7s ease-in-out infinite}
+.van svg{width:14px;height:14px}
+@keyframes ride{0%{top:8px}45%,55%{top:calc(100% - 32px)}100%{top:8px}}
+.stop{position:relative;padding:0 0 28px}
+.stop:last-child{padding-bottom:0}
+.dot{position:absolute;left:-40px;top:4px;width:24px;height:24px;border-radius:50%;background:var(--bg0);border:5px solid var(--ac)}
+.stop:last-child .dot{background:var(--ac)}
+.stop b{display:block;font-family:'Instrument Serif',serif;font-weight:400;font-size:28px;line-height:1.1}
+.stop small{display:block;font-size:14px;color:var(--mu)}
+.chips{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.chips li{border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500;line-height:1.2}
+.chips.mini{margin-top:10px}
+.chips.mini li{padding:4px 10px;font-size:12px}
+.extras{margin-top:28px;display:grid;gap:16px}
+.extras .label{color:var(--mu2)}
+.nota{margin:8px 0 0;max-width:440px;font-size:14px;line-height:1.6;color:var(--mu)}
+.rota .ghost{margin-top:32px}
+.mapwrap{position:relative}
+#mapa{height:460px;border-radius:18px;overflow:hidden;background:var(--bg2);border:1px solid var(--line)}
+.kmbadge{position:absolute;left:16px;bottom:16px;z-index:1001;background:var(--tx);color:#0A0608;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:600}
+.vanmk{transform-origin:center}
+@media(min-width:1024px){.rota .wrap{grid-template-columns:.9fr 1.1fr;align-items:center}}
+
+/* ===== VALE DESCONTO (caixa 3D + cartão dourado) ===== */
+.vale{background:var(--bg1);padding:96px 16px;overflow:hidden;text-align:center;border-top:1px solid var(--line)}
+.vale .label{color:var(--gold)}
+.scene{perspective:1100px;perspective-origin:50% 25%;height:470px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:28px;cursor:pointer}
+.box{position:relative;width:340px;height:220px;transform-style:preserve-3d;transform:rotateX(84deg) rotateZ(-22deg) translateZ(-120px);opacity:0;transition:transform 1.1s cubic-bezier(.2,.8,.2,1),opacity .8s}
+.in .box{transform:rotateX(58deg) rotateZ(-10deg);opacity:1}
+.open .box{transform:rotateX(52deg) rotateZ(-8deg)}
+.shadow{position:absolute;left:-30px;right:-30px;top:-16px;bottom:-16px;border-radius:50%;background:#000;filter:blur(22px);opacity:.6;transform:translateZ(-3px)}
+.base{position:absolute;inset:0;border-radius:6px;background:#1a1a1f}
+.insert{position:absolute;left:14px;top:12px;right:14px;bottom:12px;border-radius:6px;background:#0f0f13;box-shadow:inset 0 0 20px rgba(0,0,0,.95);transform:translateZ(3px)}
+.wall{position:absolute;background:#232329}
+.wf{left:0;top:220px;width:340px;height:18px;transform-origin:top center;transform:rotateX(90deg);background:linear-gradient(#34343b,#1d1d22)}
+.wb{left:0;top:0;width:340px;height:18px;transform-origin:top center;transform:rotateX(90deg);background:#141418}
+.wl{left:0;top:0;width:18px;height:220px;transform-origin:left center;transform:rotateY(-90deg);background:#1b1b20}
+.wr{left:322px;top:0;width:18px;height:220px;transform-origin:right center;transform:rotateY(90deg);background:#2a2a30}
+.lid{position:absolute;left:0;top:0;width:340px;height:220px;transform-style:preserve-3d;transform-origin:top center;transform:translateZ(18px) rotateX(0deg);transition:transform 1s cubic-bezier(.4,0,.2,1) 0s}
+.open .lid{transform:translateZ(18px) rotateX(108deg);transition-delay:.5s}
+.lid .out,.lid .inn{position:absolute;inset:0;border-radius:6px;backface-visibility:hidden}
+.lid .out{background:radial-gradient(120% 90% at 30% 15%,#3a3a42,#17171b 70%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.6)}
+.lid .out::after{content:'VP';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Instrument Serif',serif;font-size:54px;letter-spacing:.06em;color:#C9A84C;text-shadow:0 1px 0 rgba(255,255,255,.12),0 -1px 0 rgba(0,0,0,.8)}
+.lid .inn{background:#121216;transform:rotateX(180deg)}
+.ear{position:absolute;top:0;width:72px;height:220px;border-radius:4px;background:linear-gradient(90deg,#1b1b20,#26262c);transition:transform .8s cubic-bezier(.4,0,.2,1) 1.1s}
+.el{left:0;transform-origin:left center;transform:translateZ(19px)}
+.er{left:268px;transform-origin:right center;transform:translateZ(19px);background:linear-gradient(90deg,#26262c,#1b1b20)}
+.open .el{transform:translateZ(19px) rotateY(168deg);transition-delay:0s}
+.open .er{transform:translateZ(19px) rotateY(-168deg);transition-delay:0s}
+.card{position:absolute;left:25px;top:18px;width:290px;height:184px;transform-style:preserve-3d;transform:translateZ(5px);transition:transform 1.1s cubic-bezier(.2,.8,.2,1) 0s;--rx:0deg;--ry:0deg;--mx:50%;--my:50%}
+.open .card{transform:translateZ(130px) translateY(-30px) rotateX(calc(-48deg + var(--rx))) rotateY(var(--ry)) scale(1.08);transition-delay:1.25s}
+.live .card{transition:transform .12s linear}
+.edge,.face,.back{position:absolute;inset:0;border-radius:12px}
+.edge{background:#9A7B33}
+.face{overflow:hidden;backface-visibility:hidden;transform:translateZ(1.2px);color:#6B5A24;background:linear-gradient(calc(135deg + var(--ry)*1.4),#F6EBC6 0%,#D1B165 28%,#F7ECCB 50%,#B9953F 72%,#E9D9A4 100%);box-shadow:0 2px 0 rgba(255,255,255,.55) inset,0 -2px 0 rgba(0,0,0,.18) inset,0 10px 30px rgba(0,0,0,.4)}
+.face::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.1) 0 1px,rgba(0,0,0,.05) 1px 2px)}
+.face::after{content:'';position:absolute;inset:-60%;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.75) 50%,transparent 58%);transform:translateX(-70%)}
+.open .face::after{animation:shine 1.4s ease-out 2.2s 1 forwards}
+@keyframes shine{to{transform:translateX(70%)}}
+.spec{position:absolute;inset:0;background:radial-gradient(circle at var(--mx) var(--my),rgba(255,255,255,.8) 0%,rgba(255,255,255,.22) 16%,rgba(255,255,255,0) 42%)}
+.chip{position:absolute;left:22px;top:22px;width:42px;height:31px;border-radius:6px;background:linear-gradient(135deg,#5a5a63,#2a2a30 55%,#4a4a52);box-shadow:inset 0 0 0 1px rgba(0,0,0,.45)}
+.chip::before{content:'';position:absolute;left:4px;right:4px;top:8px;bottom:8px;border-top:1px solid rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.3)}
+.tag{position:absolute;right:22px;top:26px;font-size:10px;letter-spacing:.2em;color:#6B5A24}
+.mono{position:absolute;left:22px;bottom:46px;font-family:'Instrument Serif',serif;font-size:62px;line-height:1;letter-spacing:.04em;color:#B9953F;text-shadow:0 1px 0 #FFF6D8,0 -1px 0 #7A5F20}
+.foot-card{position:absolute;left:22px;right:22px;bottom:18px;display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;color:#6B5A24}
+.back{overflow:hidden;backface-visibility:hidden;transform:rotateY(180deg) translateZ(1.2px);background:linear-gradient(135deg,#2a2622,#15100F 50%,#2a2622)}
+.back::before{content:'';position:absolute;left:0;right:0;top:28px;height:34px;background:#0A0608}
+.back .txt{position:absolute;left:22px;bottom:22px;font-size:9px;letter-spacing:.14em;color:#B9ADA3}
+.back .vp2{position:absolute;right:22px;bottom:14px;font-family:'Instrument Serif',serif;font-size:34px;color:#8C7430;text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.6)}
+.copy{opacity:0;transform:translateY(16px);transition:opacity .6s ease 2.3s,transform .6s ease 2.3s}
+.open .copy{opacity:1;transform:none}
+.copy p{margin:16px auto 24px;max-width:440px;font-size:15px;line-height:1.7;color:var(--mu)}
+.vale .pill{background:var(--gold);color:#2B2520;box-shadow:0 0 24px rgba(217,187,99,.35)}
+@media(max-width:420px){.in .box{transform:rotateX(58deg) rotateZ(-10deg) scale(.8)}.open .box{transform:rotateX(52deg) rotateZ(-8deg) scale(.8)}}
+
+/* ===== PRÉ-CADASTRO (formulário) ===== */
+.cadastro .wrap{display:grid;gap:32px}
+.cadastro form{display:grid;gap:14px}
+.campo{display:block;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mu2)}
+.campo input,.campo select{display:block;width:100%;margin-top:6px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--bg2);color:var(--tx);padding:13px 14px;font:inherit;font-size:15px;outline:none;color-scheme:dark;transition:border-color .2s}
+.campo input:focus,.campo select:focus{border-color:var(--ac)}
+.campo input::placeholder{color:var(--mu2)}
+.row2{display:grid;gap:14px}
+.cadastro fieldset{border:0;margin:0;padding:0;min-width:0}
+.cadastro legend{padding:0;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mu2)}
+.rads{display:flex;gap:8px;margin-top:6px}
+.rad{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--bg2);padding:13px;cursor:pointer;font-size:15px;font-weight:500;transition:border-color .2s}
+.rad input{margin:0;width:18px;height:18px;accent-color:var(--ac)}
+.rad:has(input:checked){border-color:var(--ac)}
+.cadastro .pill{justify-self:start;margin-top:4px;background:var(--ac);color:#2B2520;box-shadow:0 0 24px rgba(244,132,95,.3)}
+.priv{margin:0;font-size:12px;line-height:1.5;color:var(--mu2)}
+@media(min-width:640px){.row2{grid-template-columns:1fr 1fr}}
+@media(min-width:1024px){.cadastro .wrap{grid-template-columns:.8fr 1.2fr;align-items:start}}
+
+/* ===== RODAPÉ ===== */
+.foot{background:var(--bg1);padding:96px 16px 40px;border-top:1px solid var(--line)}
+.foot .wrap{display:grid;gap:40px}
+.contatos{display:flex;flex-direction:column;gap:12px;margin-top:28px}
+.ct{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:16px 20px;text-decoration:none;transition:transform .2s,border-color .2s}
+.ct:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.25)}
+.ct .nm{display:block;font-size:14px;font-weight:500}
+.ct .tel{display:block;font-size:14px;color:var(--mu)}
+.ct .wa{display:inline-flex;align-items:center;gap:8px;background:var(--zap);color:#0B3D1F;border-radius:999px;padding:8px 16px;font-size:12px;font-weight:600;white-space:nowrap}
+.ct .wa.ig{background:none;border:1px solid rgba(255,255,255,.35);color:var(--tx)}
+.info ul{list-style:none;margin:12px 0 28px;padding:0}
+.info li{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.5;color:var(--mu);margin:0 0 8px}
+.info li svg{width:16px;height:16px;flex:none;margin-top:2px}
+.legal{max-width:1152px;margin:56px auto 0;padding-top:24px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:16px;font-size:12px;color:var(--mu2)}
+.legal a{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+@media(min-width:768px){.foot .wrap{grid-template-columns:1.3fr 1fr}.legal{flex-direction:row;justify-content:space-between;align-items:center}}
+@media(min-width:1024px){.foot{padding:128px 40px 40px}}
+@media(prefers-reduced-motion:reduce){.cue i::after,.van{animation:none}.box,.lid,.ear,.card,.copy,.menu,.menu a{transition:none!important}.face::after{animation:none!important}.phone.wait,.wait .ano,.wait .leg{opacity:1;transform:none;filter:none}.phone.in,.in .ano,.in .leg{animation:none}.cloud{opacity:.8}.roadvan{transform:translate(40vw,-50%)}}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><symbol id="van-logo" viewBox="0 0 64 36"><rect x="3" y="8" width="42" height="17" rx="3" fill="#FFF8F2"/><path d="M44 8h6.5c1.6 0 3.1.8 4 2.1l3.6 5.2c.9 1.3 1.4 2.8 1.4 4.4V23c0 1.1-.9 2-2 2H44z" fill="#FFF8F2"/><path d="M46 10.5h4.3c1 0 1.9.5 2.4 1.3l2.8 4.2H46z" fill="#0A0608"/><rect x="7" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="19" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="31" y="10.5" width="9" height="5.5" rx="1.2" fill="#0A0608"/><rect x="3" y="18" width="55" height="3" fill="#F4845F"/><rect x="56.5" y="21.8" width="3" height="2.4" rx="1" fill="#FFD27A"/><circle cx="15" cy="25" r="4.5" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="49" cy="25" r="4.5" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="15" cy="25" r="1.5" fill="#FFF8F2"/><circle cx="49" cy="25" r="1.5" fill="#FFF8F2"/></symbol></svg>
+
+<!-- ===== MENU FIXO ===== -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="Van escolar Tia Patrícia e Tio Vitor">
+    <svg class="logo" aria-hidden="true"><use href="#van-logo"/></svg>
+    <span class="brand-t"><small>Van escolar</small>Tia Patrícia &amp; Tio Vitor</span>
+  </a>
+  <nav class="links" aria-label="Seções do site">
+    <a href="#historia">História</a><a href="#rota">Rota</a><a href="#contato">Contato</a>
+  </nav>
+  <a class="pill" href="#vaga">Vagas 2027</a>
+  <button class="burger" id="burger" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
+</header>
+<aside class="menu" id="menu">
+  <a href="#historia">História</a><a href="#rota">Rota</a><a href="#contato">Contato</a>
+  <a class="pill" href="#vaga">Vagas 2027</a>
+</aside>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="top">
+  <div class="veil"></div>
+  <div class="grain"></div>
+  <div class="hero-c">
+    <p class="eyebrow">Jandira · Barueri · Osasco</p>
+    <h1>Da porta de casa<br><em>à sala de aula.</em></h1>
+    <p class="sub">Transporte escolar de Jandira e Barueri até a Fundação Bradesco, em Osasco. Ida e volta, com busca na porta de casa.</p>
+    <div class="cta">
+      <a class="pill" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener">Chamar no WhatsApp</a>
+      <a class="ghost" href="#rota">Ver a rota</a>
+    </div>
+  </div>
+  <div class="cue" aria-hidden="true"><i></i><span>Role para<br>conhecer</span></div>
+</section>
+
+<!-- ===== NOSSA HISTÓRIA ===== -->
+<section class="sec hist" id="historia">
+  <div class="wrap">
+    <p class="label">Nossa história</p>
+    <h2 class="serif">Desde 2012 na estrada</h2>
+    <p class="lead">Quatorze anos levando a turma para a escola. A van mudou, o carinho é o mesmo.</p>
+    <div class="phones">
+      <div class="phone">
+        <div class="frame">
+          <span class="pbtn l1"></span><span class="pbtn l2"></span><span class="pbtn l3"></span><span class="pbtn r1"></span>
+          <div class="screen">
+            <img src="foto-2016.png" alt="Tia Patrícia fazendo um coração com as mãos em frente à primeira van, conquistada em 2015" loading="lazy" decoding="async">
+            <div class="fog"></div>
+            <div class="island"></div>
+            <div class="toplabel">Van escolar · Tia Patrícia</div>
+            <div class="cap"><span class="ano">2015</span><span class="leg">A primeira van</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="frame">
+          <span class="pbtn l1"></span><span class="pbtn l2"></span><span class="pbtn l3"></span><span class="pbtn r1"></span>
+          <div class="screen">
+            <img src="foto-2019.png" alt="A van de 2019, prata com a faixa escolar" loading="lazy" decoding="async">
+            <div class="fog"></div>
+            <div class="island"></div>
+            <div class="toplabel">Van escolar · Tia Patrícia</div>
+            <div class="cap"><span class="ano">2019</span><span class="leg">A van cresceu</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="frame">
+          <span class="pbtn l1"></span><span class="pbtn l2"></span><span class="pbtn l3"></span><span class="pbtn r1"></span>
+          <div class="screen">
+            <img src="foto-2026.png" alt="Tia Patrícia ao lado da van nova, em 2026" loading="lazy" decoding="async">
+            <div class="fog"></div>
+            <div class="island"></div>
+            <div class="toplabel">Van escolar · Tia Patrícia</div>
+            <div class="cap"><span class="ano">2026</span><span class="leg">A van nova</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DEPOIMENTO (amanhecer) — TROQUE o texto pelas palavras reais da Tia Patrícia ===== -->
+<section class="quote" id="quote" aria-label="Palavra da Tia Patrícia">
+  <div class="sun"></div>
+  <div class="cloud c1"></div><div class="cloud c2"></div>
+  <blockquote>
+    <p class="serif">“Cada criança entra na van pelo nome e desce com a certeza de que alguém cuidou dela no caminho. Faço isso desde 2012, e a manhã continua sendo a melhor parte do meu dia.”</p>
+    Tia Patrícia · Van escolar
+  </blockquote>
+  <div class="road"><div class="roadvan" aria-hidden="true"><svg viewBox="0 0 84 50" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="10" width="66" height="26" rx="7" fill="#FFF8F2"/><path d="M50 10h14a8 8 0 0 1 7 4l5 10v12H50z" fill="#FFF8F2"/><rect x="12" y="15" width="14" height="10" rx="2" fill="#2B2520"/><rect x="30" y="15" width="14" height="10" rx="2" fill="#2B2520"/><path d="M55 15h9a4 4 0 0 1 3.5 2l3.5 8H55z" fill="#2B2520"/><rect x="6" y="28" width="66" height="4" fill="#F4845F"/><circle cx="22" cy="38" r="6" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><circle cx="62" cy="38" r="6" fill="#0A0608" stroke="#FFF8F2" stroke-width="2"/><rect x="74" y="24" width="4" height="4" rx="1" fill="#FFD27A"/></svg></div></div>
+</section>
+
+<!-- ===== ROTA ===== -->
+<section class="sec rota" id="rota">
+  <div class="wrap">
+    <div>
+      <h2 class="serif">Jandira → Barueri → Osasco</h2>
+      <p class="lead">Buscamos a turma em casa, em Jandira e Barueri, e levamos até a Fundação Bradesco, na Cidade de Deus, em Osasco. Ida e volta, todos os dias de aula.</p>
+      <ol class="tl">
+        <span class="van" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="3"/><path d="M3 11h18M9 4v7M15 4v7"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="16.5" cy="19" r="1.5"/></svg></span>
+        <li class="stop"><span class="dot"></span><b>Jandira</b><small>Busca em casa, com a monitora</small><ul class="chips mini"><li>Centro</li><li>Jardim Tereza</li><li>Jardim Fátima</li></ul></li>
+        <li class="stop"><span class="dot"></span><b>Barueri</b><small>Busca em casa</small><ul class="chips mini"><li>Jardim Califórnia</li><li>Jardim Tupanci</li><li>Vila Engenho Novo</li><li>Jardim Silveira</li><li>Parque dos Camargos</li></ul></li>
+        <li class="stop"><span class="dot"></span><b>Fundação Bradesco</b><small>Chegada na escola, em Osasco</small></li>
+      </ol>
+      <div class="extras">
+        <div>
+          <p class="label">Turmas</p>
+          <ul class="chips"><li>Manhã</li><li>Tarde</li></ul>
+        </div>
+        <div>
+          <p class="label">Segurança</p>
+          <p class="nota">Van vistoriada pelas prefeituras de Jandira e Osasco. Revisão e manutenção feitas com frequência, para levar suas crianças com segurança.</p>
+        </div>
+      </div>
+      <a class="ghost" href="https://www.google.com/maps/dir/Jandira,+SP/Barueri,+SP/Fundação+Bradesco,+Cidade+de+Deus,+Osasco+-+SP" target="_blank" rel="noopener">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        Ver rota no Google Maps
+      </a>
+    </div>
+    <div class="mapwrap">
+      <div id="mapa" aria-label="Mapa com a rota da van"></div>
+      <span class="kmbadge" id="kmbadge">Calculando a rota…</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== VALE DESCONTO ===== -->
+<section class="vale" id="vale">
+  <p class="label">Presente de boas-vindas</p>
+  <div class="scene" id="scene" role="button" tabindex="0" aria-label="Abrir a caixa do vale desconto">
+    <div class="box">
+      <div class="shadow"></div><div class="base"></div><div class="insert"></div>
+      <div class="card" id="card">
+        <div class="edge"></div>
+        <div class="face"><div class="spec"></div><div class="chip"></div><div class="tag">VALE DESCONTO</div><div class="mono">VP</div><div class="foot-card"><span>20% · PRIMEIRA MENSALIDADE</span><span>TURMA 2027</span></div></div>
+        <div class="back"><span class="txt">VAN ESCOLAR · TIA PATRÍCIA E TIO VITOR</span><span class="vp2">VP</span></div>
+      </div>
+      <div class="wall wf"></div><div class="wall wb"></div><div class="wall wl"></div><div class="wall wr"></div>
+      <div class="lid"><div class="out"></div><div class="inn"></div></div>
+      <div class="ear el"></div><div class="ear er"></div>
+    </div>
+  </div>
+  <div class="copy">
+    <h2 class="serif">Seu vale desconto VP</h2>
+    <p>Fechou a vaga até dezembro? O primeiro mês sai com 20% de desconto. É só mostrar esse cartão no WhatsApp na hora de combinar.</p>
+    <a class="pill" data-wa="patricia" data-msg="vale" href="#" target="_blank" rel="noopener">Resgatar no WhatsApp</a>
+  </div>
+</section>
+
+<!-- ===== PRÉ-CADASTRO ===== -->
+<section class="sec cadastro" id="vaga">
+  <div class="wrap">
+    <div>
+      <p class="label">Pré-cadastro</p>
+      <h2 class="serif">Quero uma vaga</h2>
+      <p class="lead">Preenche aqui e a gente responde no WhatsApp se tem vaga na turma e no bairro. Temos turmas de manhã e de tarde.</p>
+    </div>
+    <form id="form-vaga">
+      <label class="campo">Seu nome<input name="nome" required autocomplete="name"></label>
+      <div class="row2">
+        <label class="campo">WhatsApp<input name="tel" type="tel" required autocomplete="tel" placeholder="(11) 9 0000-0000"></label>
+        <label class="campo">E-mail<input name="email" type="email" autocomplete="email"></label>
+      </div>
+      <div class="row2">
+        <label class="campo">Rua<input name="rua" required autocomplete="address-line1" placeholder="Nome da rua e número"></label>
+        <label class="campo">CEP<input name="cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000"></label>
+      </div>
+      <label class="campo">Ponto de referência<input name="ref" placeholder="Ex.: em frente à padaria"></label>
+      <div class="row2">
+        <label class="campo">Série em 2027<select name="serie" id="serie" required><option value="">Escolher…</option></select></label>
+        <fieldset><legend>Turma</legend><div class="rads"><label class="rad"><input type="radio" name="turma" value="Manhã" required>Manhã</label><label class="rad"><input type="radio" name="turma" value="Tarde">Tarde</label></div></fieldset>
+      </div>
+      <button class="pill" type="submit">Enviar pelo WhatsApp</button>
+      <p class="priv">Seus dados vão direto para o WhatsApp da Tia Patrícia. O site não guarda nada.</p>
+    </form>
+  </div>
+</section>
+
+<!-- ===== RODAPÉ ===== -->
+<footer class="foot" id="contato">
+  <div class="wrap">
+    <div>
+      <p class="label">Fale com a gente</p>
+      <h2 class="serif">Bora garantir a vaga?</h2>
+      <div class="contatos">
+        <a class="ct" data-wa="patricia" data-msg="padrao" href="#" target="_blank" rel="noopener"><span><span class="nm">Tia Patrícia</span><span class="tel" data-tel="patricia"></span></span><span class="wa"><svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>WhatsApp</span></a>
+        <a class="ct" data-wa="vitor" data-msg="padrao" href="#" target="_blank" rel="noopener"><span><span class="nm">Tio Vitor</span><span class="tel" data-tel="vitor"></span></span><span class="wa"><svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>WhatsApp</span></a>
+        <a class="ct" href="https://www.instagram.com/van_tiapatricia/" target="_blank" rel="noopener"><span><span class="nm">Instagram</span><span class="tel">@van_tiapatricia</span></span><span class="wa ig">Seguir<svg class="ico" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></span></a>
+      </div>
+    </div>
+    <div class="info">
+      <p class="label">Onde atendemos</p>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Jandira (Centro, Jardim Tereza, Jardim Fátima) e Barueri (Jardim Califórnia, Jardim Tupanci, Vila Engenho Novo, Jardim Silveira, Parque dos Camargos)</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12M9 21v-6h6v6"/></svg>Fundação Bradesco, Osasco</li>
+      </ul>
+      <p class="label">Atendimento</p>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Seg a sex, 7h às 19h</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Ligação ou WhatsApp</li>
+      </ul>
+    </div>
+  </div>
+  <div class="legal">
+    <span>© <span id="ano">2026</span> Van Escolar Tia Patrícia e Tio Vitor · Todos os direitos reservados</span>
+    <a href="#" aria-label="Desenvolvido por vitrapi"><span>Desenvolvido por</span>
+      <svg viewBox="0 0 360 120" height="30" role="img" aria-label="vitrapi"><text x="18" y="64" font-family="'IBM Plex Mono',ui-monospace,monospace" font-weight="600" font-size="54"><tspan fill="#8A8A8A">&lt;</tspan><tspan fill="#F7F7F5">vitr</tspan><tspan fill="#F5B700">api</tspan><tspan fill="#8A8A8A">/&gt;</tspan></text><path d="M66 86 Q172 118 278 86" fill="none" stroke="#F5B700" stroke-width="7" stroke-linecap="round"/><rect x="58" y="79" width="14" height="14" fill="#F7F7F5"/><rect x="272" y="79" width="14" height="14" fill="#F7F7F5"/></svg>
+    </a>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* =================== CONFIGURAÇÃO (edite aqui) =================== */
+const CONFIG = {
+  patricia: { nome: 'Tia Patrícia', tel: '+55 11 99692-9358', wa: '5511996929358' }, // CONFIRA
+  vitor:    { nome: 'Tio Vitor',    tel: '+55 11 98406-1754', wa: '5511984061754' }, // CONFIRA
+  msg:     'Oi! Vi o site da van e quero saber sobre vagas para 2027.',
+  msgVale: 'Oi! Quero resgatar o vale desconto VP.',
+  msgVaga: 'Oi! Quero uma vaga na van para 2027. Seguem meus dados:',
+  series: ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'],
+  paradas: [
+    { nome: 'Jandira',           lat: -23.5277, lng: -46.9028 },
+    { nome: 'Barueri',           lat: -23.5106, lng: -46.8761 },
+    { nome: 'Fundação Bradesco', lat: -23.5360, lng: -46.7815 }, // CONFIRA no Google Maps (botão direito na escola)
+  ],
+};
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.querySelectorAll('[data-wa]').forEach(a => {
+  const c = CONFIG[a.dataset.wa];
+  const m = a.dataset.msg === 'vale' ? CONFIG.msgVale : CONFIG.msg;
+  a.href = `https://wa.me/${c.wa}?text=${encodeURIComponent(m)}`;
+});
+document.querySelectorAll('[data-tel]').forEach(s => { s.textContent = CONFIG[s.dataset.tel].tel; });
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+/* =================== MENU FIXO E MENU DO CELULAR =================== */
+const nav = document.getElementById('nav'), burger = document.getElementById('burger');
+const navScroll = () => nav.classList.toggle('solid', scrollY > 40);
+addEventListener('scroll', navScroll, { passive: true }); navScroll();
+function menu(on) { document.body.classList.toggle('menu-on', on); burger.setAttribute('aria-expanded', on); burger.setAttribute('aria-label', on ? 'Fechar menu' : 'Abrir menu'); }
+burger.onclick = () => menu(!document.body.classList.contains('menu-on'));
+document.querySelectorAll('#menu a').forEach(a => a.addEventListener('click', () => menu(false)));
+addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); });
+
+/* =================== MAPA (satélite + rota real + van) =================== */
+async function iniciarMapa() {
+  const P = CONFIG.paradas, badge = document.getElementById('kmbadge');
+  const map = L.map('mapa', { scrollWheelZoom: false, dragging: !L.Browser.mobile });
+  const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagens © Esri, Maxar, Earthstar Geographics' });
+  const ruas = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
+  const nomes = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+  sat.addTo(map); nomes.addTo(map);
+  L.control.layers({ 'Satélite': sat, 'Mapa de ruas': ruas }, { 'Nomes': nomes }).addTo(map);
+
+  let coords = P.map(p => [p.lat, p.lng]);
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${P.map(p => p.lng + ',' + p.lat).join(';')}?overview=full&geometries=geojson`;
+    const j = await (await fetch(url)).json();
+    if (j.code === 'Ok') {
+      const rt = j.routes[0];
+      coords = rt.geometry.coordinates.map(c => [c[1], c[0]]);
+      badge.textContent = `≈ ${(rt.distance / 1000).toFixed(1).replace('.', ',')} km · ${Math.round(rt.duration / 60)} min`;
+    } else badge.remove();
+  } catch (e) { badge.remove(); }
+
+  L.polyline(coords, { color: '#fff', weight: 10, opacity: .6 }).addTo(map);
+  const linha = L.polyline(coords, { color: '#F4845F', weight: 5, opacity: .95 }).addTo(map);
+  map.fitBounds(linha.getBounds(), { padding: [40, 40] });
+  P.forEach((p, i) => L.circleMarker([p.lat, p.lng], { radius: 9, color: '#F4845F', weight: 3, fillColor: '#fff', fillOpacity: 1 }).bindTooltip(`${i + 1}. ${p.nome}`, { permanent: true, direction: 'top', offset: [0, -10] }).addTo(map));
+
+  const VAN = '<svg viewBox="0 0 40 24" width="40" height="24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="1" width="6" height="4" rx="1" fill="#2B2520"/><rect x="25" y="1" width="6" height="4" rx="1" fill="#2B2520"/><rect x="3" y="19" width="6" height="4" rx="1" fill="#2B2520"/><rect x="25" y="19" width="6" height="4" rx="1" fill="#2B2520"/><rect x="2" y="4" width="33" height="16" rx="5" fill="#fff" stroke="#2B2520" stroke-width="1.5"/><rect x="27" y="6" width="6" height="12" rx="2" fill="#C9E1F3"/><rect x="7" y="10" width="16" height="4" rx="1" fill="#F4845F"/></svg>';
+  const van = L.marker(coords[0], { icon: L.divIcon({ className: '', html: `<div class="vanmk">${VAN}</div>`, iconSize: [40, 24], iconAnchor: [20, 12] }), zIndexOffset: 1000 }).addTo(map);
+  if (reduce || coords.length < 2) return;
+
+  const acc = [0];
+  for (let i = 1; i < coords.length; i++) acc.push(acc[i - 1] + map.distance(coords[i - 1], coords[i]));
+  const total = acc[acc.length - 1];
+  const stopsD = P.map(p => { let b = 0, dm = Infinity; coords.forEach((c, i) => { const d = map.distance(c, [p.lat, p.lng]); if (d < dm) { dm = d; b = i; } }); return acc[b]; });
+  stopsD[0] = 0; stopsD[stopsD.length - 1] = total;
+  const MOVE = 24000, PAUSE = 2000, fases = [];
+  for (let i = 0; i < stopsD.length; i++) { fases.push({ ms: PAUSE, de: stopsD[i], ate: stopsD[i] }); if (i < stopsD.length - 1) fases.push({ ms: MOVE * (stopsD[i + 1] - stopsD[i]) / total, de: stopsD[i], ate: stopsD[i + 1] }); }
+  const LOOP = fases.reduce((s, f) => s + f.ms, 0);
+  const distEm = t => { let r = t % LOOP; for (const f of fases) { if (r < f.ms) return f.de + (f.ate - f.de) * (r / f.ms); r -= f.ms; } return total; };
+  const t0 = performance.now();
+  (function anim(now) {
+    const d = distEm(now - t0); let i = 0;
+    while (i < acc.length - 2 && acc[i + 1] < d) i++;
+    const a = L.latLng(coords[i]), b = L.latLng(coords[i + 1]);
+    const f = (d - acc[i]) / Math.max(acc[i + 1] - acc[i], .001);
+    van.setLatLng([a.lat + (b.lat - a.lat) * f, a.lng + (b.lng - a.lng) * f]);
+    const pa = map.latLngToLayerPoint(a), pb = map.latLngToLayerPoint(b);
+    const el = van.getElement() && van.getElement().querySelector('.vanmk');
+    if (el) el.style.transform = `rotate(${Math.atan2(pb.y - pa.y, pb.x - pa.x) * 180 / Math.PI}deg)`;
+    requestAnimationFrame(anim);
+  })(performance.now());
+}
+iniciarMapa();
+
+/* =================== VALE DESCONTO (caixa + cartão) =================== */
+const vale = document.getElementById('vale'), scene = document.getElementById('scene'), card = document.getElementById('card');
+let live = false, hover = false, timer = null; const tv0 = performance.now();
+function tilt(rx, ry, mx, my) { card.style.setProperty('--rx', rx.toFixed(2) + 'deg'); card.style.setProperty('--ry', ry.toFixed(2) + 'deg'); card.style.setProperty('--mx', mx.toFixed(1) + '%'); card.style.setProperty('--my', my.toFixed(1) + '%'); }
+function abrir() { if (vale.classList.contains('open')) return; vale.classList.add('open'); if (reduce) return; clearTimeout(timer); timer = setTimeout(() => { live = true; vale.classList.add('live'); }, 2500); }
+function fechar() { clearTimeout(timer); live = false; hover = false; vale.classList.remove('live'); tilt(0, 0, 50, 50); vale.classList.remove('open'); }
+scene.addEventListener('click', () => vale.classList.contains('open') ? fechar() : abrir());
+scene.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scene.click(); } });
+scene.addEventListener('mousemove', e => { if (!live) return; hover = true; const r = scene.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; tilt(-y * 28, x * 44, 50 + x * 70, 50 + y * 70); });
+scene.addEventListener('mouseleave', () => { hover = false; });
+(function idle(now) { if (live && !hover) { const t = (now - tv0) / 1000; tilt(Math.sin(t * .9) * 6, Math.sin(t * .55) * 24, 50 + Math.sin(t * .55) * 38, 50 - Math.sin(t * .9) * 22); } requestAnimationFrame(idle); })(performance.now());
+const io = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { vale.classList.add('in'); setTimeout(abrir, reduce ? 0 : 1100); io.disconnect(); } }); }, { threshold: .35 });
+io.observe(vale);
+
+/* =================== NOSSA HISTÓRIA (anima os celulares ao entrar na tela) =================== */
+if ('IntersectionObserver' in window) {
+  const fones = document.querySelectorAll('.phone');
+  fones.forEach(p => p.classList.add('wait'));
+  const ioF = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); ioF.unobserve(e.target); } }); }, { threshold: .3 });
+  fones.forEach(p => ioF.observe(p));
+}
+
+/* =================== DEPOIMENTO (sol, nuvens e van acompanham a rolagem) =================== */
+const q = document.getElementById('quote');
+if (q && !reduce) {
+  const c1 = q.querySelector('.c1'), c2 = q.querySelector('.c2'), sun = q.querySelector('.sun'), rv = q.querySelector('.roadvan');
+  const cur = { c: -200, s: 0, v: 0 }, tgt = { c: -200, s: 0, v: 0 };
+  const lerp = (a, b, f) => a + (b - a) * f;
+  (function loop() {
+    const r = q.getBoundingClientRect(), wh = innerHeight;
+    if (r.bottom > 0 && r.top < wh) {
+      const p = Math.min(1, Math.max(0, (wh - r.top) / (wh + r.height)));
+      tgt.c = p > .12 && p < .92 ? 0 : -200; tgt.s = (p - .5) * -140; tgt.v = p;
+      cur.c = lerp(cur.c, tgt.c, .04); cur.s = lerp(cur.s, tgt.s, .06); cur.v = lerp(cur.v, tgt.v, .08);
+      const op = 1 - Math.min(1, Math.abs(cur.c) / 200), cy = cur.v * -50;
+      c1.style.transform = `translate3d(${cur.c}px,${cy}px,0)`; c1.style.opacity = op;
+      c2.style.transform = `translate3d(${-cur.c}px,${cy}px,0) scaleX(-1)`; c2.style.opacity = op;
+      sun.style.transform = `translate(-50%,calc(50% + ${cur.s}px))`;
+      rv.style.transform = `translate(${-120 + cur.v * (q.offsetWidth + 240)}px,-50%)`;
+    }
+    requestAnimationFrame(loop);
+  })();
+}
+
+/* =================== PRÉ-CADASTRO (monta a mensagem e abre o WhatsApp) =================== */
+const formVaga = document.getElementById('form-vaga');
+if (formVaga) {
+  const selSerie = document.getElementById('serie');
+  CONFIG.series.forEach(s => { const o = document.createElement('option'); o.textContent = s; selSerie.appendChild(o); });
+  formVaga.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = new FormData(formVaga), v = k => (f.get(k) || '').toString().trim() || '—';
+    const txt = [CONFIG.msgVaga, '', 'Nome: ' + v('nome'), 'WhatsApp: ' + v('tel'), 'E-mail: ' + v('email'), 'Rua: ' + v('rua'), 'CEP: ' + v('cep'), 'Referência: ' + v('ref'), 'Série: ' + v('serie'), 'Turma: ' + v('turma')].join('\n');
+    const url = 'https://wa.me/' + CONFIG.patricia.wa + '?text=' + encodeURIComponent(txt);
+    if (!window.open(url, '_blank')) location.href = url;
+  });
+}
+</script>
+</body>
+</html>
