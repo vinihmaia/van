@@ -4,6 +4,7 @@
 const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = true;
 const SERIES = ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'];
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MESES_LONGO = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
 /* ---------- conexão com o banco ---------- */
 const CFG = window.VAN_CONFIG || {};
@@ -19,6 +20,7 @@ const fmtBRL = n => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency'
 const fmtData = (iso, hora) => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString('pt-BR') + (hora ? ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''); };
 const fmtDia = s => s ? s.split('-').reverse().join('/') : '—';
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const primeiroNome = s => (s || '').trim().split(' ')[0];
 let tt; function toast(m) { const el = document.getElementById('toast'); el.textContent = m; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 3200); }
 function erroLogin(m) { document.getElementById('erro-login').textContent = m || ''; }
 function traduzErro(e) {
@@ -26,27 +28,28 @@ function traduzErro(e) {
   if (/failed to fetch|networkerror|network request/i.test(m)) return 'Sem conexão com o banco. Confira a internet e tente de novo.';
   if (/jwt|token.*expired/i.test(m)) return 'Sua sessão expirou. Saia e entre de novo.';
   if (/permission denied|row-level security/i.test(m)) return 'Sem permissão para esta ação.';
+  if (/mensalidade_paga_completa/i.test(m)) return 'Informe a forma e a data do pagamento.';
   return m;
 }
 const linkAssinatura = c => location.href.split('#')[0] + '#assinar/' + c.token;
 function mensagemWhatsApp(c) {
-  const nome = (c.responsavel.nome || '').trim().split(' ')[0];
-  return `Olá, ${nome}! Segue o link para assinar o contrato de transporte escolar 2027 de ${c.crianca.nome}:\n\n${linkAssinatura(c)}\n\n` +
+  return `Olá, ${primeiroNome(c.responsavel.nome)}! Segue o link para assinar o contrato de transporte escolar 2027 de ${c.crianca.nome}:\n\n${linkAssinatura(c)}\n\n` +
     `Na página, clique em "Receber código por e-mail". O código chega em ${c.responsavel.email} e vale por 15 minutos.\n` +
     `Se não aparecer na caixa de entrada, confira a pasta de lixo eletrônico (spam).`;
 }
-/* Link wa.me: abre a conversa com o responsável e a mensagem já escrita (nada é enviado sozinho) */
-function linkWhatsApp(c) {
-  let n = soDigitos(c.responsavel.tel);
+/* Link wa.me: abre a conversa com a mensagem já escrita (nada é enviado sozinho) */
+function linkWa(tel, msg) {
+  let n = soDigitos(tel);
   if (n.length === 10 || n.length === 11) n = '55' + n;
   if (!/^55\d{10,11}$/.test(n)) return null;
-  return 'https://wa.me/' + n + '?text=' + encodeURIComponent(mensagemWhatsApp(c));
+  return 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg);
 }
-function abrirWhatsApp(c) {
-  const url = linkWhatsApp(c);
-  if (!url) { toast('WhatsApp do responsável vazio ou incompleto. Use "Copiar mensagem" e envie pelo seu WhatsApp.'); return; }
+function abrirConversa(tel, msg) {
+  const url = linkWa(tel, msg);
+  if (!url) { toast('WhatsApp do responsável vazio ou incompleto. Copie a mensagem e envie pelo seu WhatsApp.'); return; }
   window.open(url, '_blank', 'noopener');
 }
+const abrirWhatsApp = c => abrirConversa(c.responsavel.tel, mensagemWhatsApp(c));
 async function copiar(t) {
   const aviso = 'Mensagem copiada. Cole no WhatsApp do responsável.';
   try { await navigator.clipboard.writeText(t); toast(aviso); } catch (e) { prompt('Copie a mensagem:', t); }
@@ -105,6 +108,7 @@ function textoContrato(c, html) {
 function mostrar(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function carregando() { document.getElementById('tab-contratos').innerHTML = '<tr><td colspan="6" class="vazio">Carregando…</td></tr>'; }
 async function rota() {
+  fecharModais();
   const h = location.hash.slice(1) || 'contratos', [tela, param] = h.split('/');
   if (tela === 'assinar') { mostrar('tela-assinar'); telaAssinar(param); window.scrollTo(0, 0); return; }
   if (!sb) { mostrar('tela-login'); erroLogin('Não foi possível carregar a conexão com o banco. Confira a internet e o arquivo config.js.'); document.getElementById('login-btn').disabled = true; return; }
@@ -171,11 +175,13 @@ document.getElementById('tab-contratos').addEventListener('click', e => {
 });
 document.querySelectorAll('.chip[data-f]').forEach(ch => ch.addEventListener('click', () => { filtro = ch.dataset.f; document.querySelectorAll('.chip[data-f]').forEach(x => x.classList.toggle('on', x === ch)); renderContratos(); }));
 document.getElementById('busca').addEventListener('input', e => { busca = e.target.value; renderContratos(); });
+function baixarCSV(nome, cab, linhas) {
+  const csv = [cab, ...linhas].map(l => l.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(';')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })); a.download = nome; a.click();
+}
 document.getElementById('exportar').addEventListener('click', () => {
   const cab = ['Responsável', 'CPF', 'WhatsApp', 'E-mail', 'Criança', 'Série', 'Turma', 'Bairro', 'Mensalidade', 'Status', 'Assinado em'];
-  const linhas = DB.contratos.map(c => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.responsavel.tel, c.responsavel.email, c.crianca.nome, c.crianca.serie, c.turma, c.bairro, c.mensalidade, c.status, c.assinatura ? fmtData(c.assinatura.em, true) : '']);
-  const csv = [cab, ...linhas].map(l => l.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(';')).join('\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })); a.download = 'contratos-2027.csv'; a.click();
+  baixarCSV('contratos-2027.csv', cab, DB.contratos.map(c => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.responsavel.tel, c.responsavel.email, c.crianca.nome, c.crianca.serie, c.turma, c.bairro, c.mensalidade, c.status, c.assinatura ? fmtData(c.assinatura.em, true) : '']));
 });
 
 /* ---------- contratos: novo / editar ---------- */
@@ -354,34 +360,185 @@ formA.addEventListener('submit', async e => {
   window.scrollTo(0, 0);
 });
 
-/* ---------- financeiro (prévia da fase 2) ---------- */
+/* ---------- financeiro (fase 2) ---------- */
+const pegar = id => document.getElementById(id);
+let finFiltro = 'todos', finBusca = '';
+const hojeMeioDia = () => { const d = new Date(); d.setHours(12, 0, 0, 0); return d; };
+const vencDe = m => new Date(m.vencimento + 'T12:00:00');
+const estaAtrasada = m => !m.pago && vencDe(m) < hojeMeioDia();
+const diasAtraso = m => Math.round((hojeMeioDia() - vencDe(m)) / 86400000);
+const nomeForma = f => f === 'pix' ? 'Pix' : f === 'dinheiro' ? 'Dinheiro' : '—';
+const nomeMesAno = m => MESES_LONGO[m.mes - 1] + ' de ' + m.ano;
+
+/* Todas as mensalidades dos contratos assinados, cada uma com o seu contrato */
+function todasMensalidades() {
+  const out = [];
+  DB.contratos.filter(c => c.status === 'assinado').forEach(c => {
+    for (let i = 1; i <= 12; i++) { const m = c.mensalidades[i]; if (m) out.push({ c, m }); }
+  });
+  return out;
+}
+const acharMens = id => todasMensalidades().find(x => x.m.id === id);
+function mensagemCobranca(c, m) {
+  return `Olá, ${primeiroNome(c.responsavel.nome)}! Lembrete: a mensalidade de ${MESES_LONGO[m.mes - 1]} do transporte escolar de ${c.crianca.nome} (${fmtBRL(m.valor)}, vencimento ${fmtDia(m.vencimento)}) ainda está em aberto.`;
+}
+
 function renderFinanceiro() {
-  const cs = DB.contratos.filter(c => c.status === 'assinado'), hoje = new Date();
-  let recebido = 0, aberto = 0, atrasados = 0;
+  const todas = todasMensalidades(), hoje = hojeMeioDia(), mesAtual = hojeISO().slice(0, 7);
+  let dinheiro = 0, pix = 0, aberto = 0, recMes = 0, valorAtraso = 0;
+  const atrasadas = [], proximas = [];
+  todas.forEach(({ c, m }) => {
+    const v = Number(m.valor);
+    if (m.pago) {
+      if (m.forma_pagamento === 'pix') pix += v; else dinheiro += v;
+      if ((m.pago_em || '').slice(0, 7) === mesAtual) recMes += v;
+    } else {
+      aberto += v;
+      if (estaAtrasada(m)) { atrasadas.push({ c, m }); valorAtraso += v; }
+      else { const d = Math.round((vencDe(m) - hoje) / 86400000); if (d >= 0 && d <= 7) proximas.push({ c, m }); }
+    }
+  });
+
+  /* Cartões */
+  pegar('fin-recebido').textContent = fmtBRL(dinheiro + pix);
+  pegar('fin-formas').textContent = 'Dinheiro ' + fmtBRL(dinheiro) + ' · Pix ' + fmtBRL(pix);
+  pegar('fin-mes').textContent = fmtBRL(recMes);
+  pegar('fin-mes-nome').textContent = MESES_LONGO[new Date().getMonth()] + ' de ' + new Date().getFullYear();
+  pegar('fin-aberto').textContent = fmtBRL(aberto);
+  pegar('fin-atrasados').textContent = atrasadas.length;
+  pegar('fin-atrasados-valor').textContent = fmtBRL(valorAtraso);
+
+  /* Próximos vencimentos */
+  const avisoProx = pegar('fin-proximos');
+  avisoProx.hidden = !proximas.length;
+  if (proximas.length) avisoProx.textContent = `${proximas.length} mensalidade(s) vencem nos próximos 7 dias, somando ${fmtBRL(proximas.reduce((s, x) => s + Number(x.m.valor), 0))}.`;
+
+  /* Lista de atrasados (mais antigos primeiro) */
+  atrasadas.sort((a, b) => vencDe(a.m) - vencDe(b.m));
+  pegar('fin-bloco-atrasos').hidden = !atrasadas.length;
+  pegar('fin-atrasos-qtd').textContent = atrasadas.length ? '(' + atrasadas.length + ')' : '';
+  pegar('tab-atrasos').innerHTML = atrasadas.map(({ c, m }) => `<tr><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}</td><td>${esc(nomeMesAno(m))}<small>venceu ${fmtDia(m.vencimento)}</small></td><td>${fmtBRL(m.valor)}</td><td><span class="tag atrasado">${diasAtraso(m)} dia(s)</span></td><td><button class="btn sm" data-pag="${m.id}" type="button">Registrar pagamento</button> <button class="btn or sm" data-cobrar="${m.id}" type="button">Cobrar no WhatsApp</button></td></tr>`).join('');
+
+  /* Tabela de 12 meses */
+  const assinados = DB.contratos.filter(c => c.status === 'assinado'), b = finBusca.toLowerCase();
+  const cs = assinados.filter(c => {
+    const temAtraso = Object.values(c.mensalidades).some(estaAtrasada);
+    if (finFiltro === 'atraso' && !temAtraso) return false;
+    if (finFiltro === 'emdia' && temAtraso) return false;
+    return !b || (c.responsavel.nome + ' ' + c.crianca.nome).toLowerCase().includes(b);
+  });
   const linhas = cs.map(c => {
     let pagos = 0;
     const cels = MESES.map((nomeMes, i) => {
-      const m = c.mensalidades[i + 1], valor = m ? Number(m.valor) : c.mensalidade, pago = !!(m && m.pago);
-      const venc = m ? new Date(m.vencimento + 'T12:00:00') : new Date(ANO, i, c.vencimento), atr = !pago && venc < hoje;
-      if (pago) { recebido += valor; pagos++; } else aberto += valor;
-      if (atr) atrasados++;
-      return `<td><button class="mes ${pago ? 'pago' : atr ? 'atrasado' : ''}" data-id="${c.id}" data-m="${i + 1}" title="${nomeMes}${m ? ' · ' + fmtBRL(valor) : ' · mensalidade ainda não criada'}" type="button"${m ? '' : ' disabled'}>✓</button></td>`;
+      const m = c.mensalidades[i + 1];
+      if (!m) return `<td><button class="mes" type="button" disabled title="${nomeMes} · mensalidade não criada">·</button></td>`;
+      const atr = estaAtrasada(m), pix = m.forma_pagamento === 'pix';
+      if (m.pago) pagos++;
+      const situacao = m.pago ? 'pago em ' + fmtDia(m.pago_em) + ' · ' + nomeForma(m.forma_pagamento) : atr ? 'atrasado' : 'a vencer';
+      const cls = m.pago ? 'pago' + (pix ? ' pix' : '') : atr ? 'atrasado' : '';
+      return `<td><button class="mes ${cls}" data-mid="${m.id}" type="button" title="${nomeMes} · ${fmtBRL(m.valor)} · ${situacao}">${m.pago ? (pix ? 'P' : 'D') : ''}</button></td>`;
     }).join('');
-    return `<tr><td>${esc(c.responsavel.nome)}<small>${esc(c.crianca.nome)} · ${esc(c.turma)} · ${fmtBRL(c.mensalidade)}</small></td>${cels}<td><b>${pagos}/12</b></td></tr>`;
+    return `<tr><td><button class="linknome" data-extrato="${c.responsavel.id}" type="button">${esc(c.responsavel.nome)}</button><small>${esc(c.crianca.nome)} · ${esc(c.turma)} · ${fmtBRL(c.mensalidade)}</small></td>${cels}<td><b>${pagos}/12</b></td></tr>`;
   });
-  document.getElementById('tab-fin').innerHTML = linhas.length ? linhas.join('') : '<tr><td colspan="14" class="vazio">Nenhum contrato assinado ainda. As mensalidades aparecem aqui depois da assinatura.</td></tr>';
-  document.getElementById('fin-recebido').textContent = fmtBRL(recebido);
-  document.getElementById('fin-aberto').textContent = fmtBRL(aberto);
-  document.getElementById('fin-atrasados').textContent = atrasados;
+  const vazio = assinados.length ? 'Nenhum contrato neste filtro.' : 'Nenhum contrato assinado ainda. As mensalidades aparecem aqui depois da assinatura.';
+  pegar('tab-fin').innerHTML = linhas.length ? linhas.join('') : `<tr><td colspan="14" class="vazio">${vazio}</td></tr>`;
 }
-document.getElementById('tab-fin').addEventListener('click', async e => {
-  const b = e.target.closest('button.mes'); if (!b || b.disabled) return;
-  const c = achar(b.dataset.id), m = c && c.mensalidades[b.dataset.m]; if (!m) return;
-  b.disabled = true;
-  const novo = !m.pago;
-  const { error } = await sb.from('mensalidades').update({ pago: novo, pago_em: novo ? hojeISO() : null }).eq('id', m.id);
-  if (error) { toast(traduzErro(error)); b.disabled = false; return; }
-  await recarregar(); renderFinanceiro();
+
+/* Cliques no financeiro */
+pegar('tab-fin').addEventListener('click', e => {
+  const mes = e.target.closest('button.mes'); if (mes && !mes.disabled) { abrirPagamento(mes.dataset.mid); return; }
+  const nome = e.target.closest('button[data-extrato]'); if (nome) abrirExtrato(nome.dataset.extrato);
+});
+pegar('tab-atrasos').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.pag) abrirPagamento(b.dataset.pag);
+  if (b.dataset.cobrar) { const x = acharMens(b.dataset.cobrar); if (x) abrirConversa(x.c.responsavel.tel, mensagemCobranca(x.c, x.m)); }
+});
+document.querySelectorAll('.chip[data-ff]').forEach(ch => ch.addEventListener('click', () => { finFiltro = ch.dataset.ff; document.querySelectorAll('.chip[data-ff]').forEach(x => x.classList.toggle('on', x === ch)); renderFinanceiro(); }));
+pegar('fin-busca').addEventListener('input', e => { finBusca = e.target.value; renderFinanceiro(); });
+pegar('fin-exportar').addEventListener('click', () => {
+  const cab = ['Responsável', 'CPF', 'Criança', 'Turma', 'Mês', 'Vencimento', 'Valor', 'Situação', 'Pago em', 'Forma', 'Registrado por'];
+  const linhas = todasMensalidades().map(({ c, m }) => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.crianca.nome, c.turma, nomeMesAno(m), fmtDia(m.vencimento), Number(m.valor).toFixed(2).replace('.', ','), m.pago ? 'Pago' : estaAtrasada(m) ? 'Atrasado' : 'A vencer', m.pago ? fmtDia(m.pago_em) : '', m.pago ? nomeForma(m.forma_pagamento) : '', m.pago_por_nome || '']);
+  baixarCSV('financeiro-2027.csv', cab, linhas);
+});
+
+/* Janelinhas (modais) */
+function abrirModal(id) { pegar(id).hidden = false; document.body.classList.add('travado'); }
+function fecharModais() { document.querySelectorAll('.modal-fundo').forEach(x => { x.hidden = true; }); document.body.classList.remove('travado'); }
+document.querySelectorAll('[data-fechar]').forEach(b => b.addEventListener('click', fecharModais));
+document.querySelectorAll('.modal-fundo').forEach(f => f.addEventListener('click', e => { if (e.target === f) fecharModais(); }));
+addEventListener('keydown', e => { if (e.key === 'Escape') fecharModais(); });
+
+/* Registrar / desfazer pagamento */
+const formPag = pegar('form-pag');
+let pagAtual = null;
+function abrirPagamento(mid) {
+  const x = acharMens(mid); if (!x) return; pagAtual = x;
+  const { c, m } = x;
+  pegar('pag-titulo').textContent = m.pago ? 'Pagamento registrado' : 'Registrar pagamento';
+  pegar('pag-sub').textContent = c.responsavel.nome + ' · ' + c.crianca.nome;
+  let info = `<b>${esc(nomeMesAno(m))}</b> · ${fmtBRL(m.valor)} · vencimento ${fmtDia(m.vencimento)}`;
+  if (m.mes === 1 && c.vale) info += '<br>Já com o desconto de 20% do vale PV.';
+  if (m.pago) info += `<br>Pago em ${fmtDia(m.pago_em)} · ${nomeForma(m.forma_pagamento)}${m.pago_por_nome ? ' · registrado por ' + esc(m.pago_por_nome) : ''}`;
+  else if (estaAtrasada(m)) info += `<br><span style="color:var(--red)">Atrasada há ${diasAtraso(m)} dia(s).</span>`;
+  pegar('pag-info').innerHTML = info;
+  formPag.reset(); formPag.elements.data.value = hojeISO(); formPag.elements.data.max = hojeISO();
+  formPag.hidden = m.pago; pegar('pag-pago').hidden = !m.pago; pegar('pag-erro').textContent = '';
+  abrirModal('modal-pag');
+}
+formPag.addEventListener('submit', async e => {
+  e.preventDefault(); if (!pagAtual) return;
+  const forma = formPag.elements.forma.value, data = formPag.elements.data.value, erro = pegar('pag-erro');
+  erro.textContent = '';
+  if (!forma) { erro.textContent = 'Escolha dinheiro ou Pix.'; return; }
+  if (!data) { erro.textContent = 'Informe a data do pagamento.'; return; }
+  if (data > hojeISO()) { erro.textContent = 'A data do pagamento não pode ser no futuro.'; return; }
+  const b = pegar('pag-confirmar'); b.disabled = true;
+  const { data: res, error } = await sb.from('mensalidades').update({ pago: true, forma_pagamento: forma, pago_em: data }).eq('id', pagAtual.m.id).eq('pago', false).select('id');
+  b.disabled = false;
+  if (error) { erro.textContent = traduzErro(error); return; }
+  fecharModais(); await recarregar(); renderFinanceiro();
+  toast(res.length ? 'Pagamento registrado.' : 'Este mês já tinha sido marcado como pago em outro aparelho. A tela foi atualizada.');
+});
+pegar('pag-desfazer').addEventListener('click', async () => {
+  if (!pagAtual || !confirm('Desfazer este pagamento? O mês volta a ficar em aberto.')) return;
+  const { error } = await sb.from('mensalidades').update({ pago: false }).eq('id', pagAtual.m.id);
+  if (error) { pegar('pag-erro').textContent = traduzErro(error); return; }
+  fecharModais(); await recarregar(); renderFinanceiro();
+  toast('Pagamento desfeito.');
+});
+
+/* Extrato do responsável */
+let extratoAtual = null;
+function linhasExtrato(cs) {
+  const out = [];
+  cs.forEach(c => { for (let i = 1; i <= 12; i++) { const m = c.mensalidades[i]; if (m) out.push({ c, m }); } });
+  return out;
+}
+function abrirExtrato(respId) {
+  const cs = DB.contratos.filter(c => c.status === 'assinado' && c.responsavel.id === respId); if (!cs.length) return;
+  const r = cs[0].responsavel, linhas = linhasExtrato(cs);
+  extratoAtual = { r, linhas };
+  let pago = 0, abertoV = 0, atrasoV = 0;
+  pegar('ext-titulo').textContent = 'Extrato · ' + r.nome;
+  pegar('ext-sub').textContent = 'Transporte escolar ' + ANO + ' · CPF ' + fmtCPF(r.cpf);
+  pegar('tab-extrato').innerHTML = linhas.map(({ c, m }) => {
+    const v = Number(m.valor), atr = estaAtrasada(m);
+    if (m.pago) pago += v; else { abertoV += v; if (atr) atrasoV += v; }
+    const sit = m.pago ? '<span class="tag pago">Pago</span>' : atr ? '<span class="tag atrasado">Atrasado</span>' : '<span class="tag aberto">A vencer</span>';
+    return `<tr><td>${esc(c.crianca.nome)}</td><td>${esc(MESES_LONGO[m.mes - 1])}</td><td>${fmtDia(m.vencimento)}</td><td>${fmtBRL(v)}</td><td>${sit}</td><td>${m.pago ? fmtDia(m.pago_em) : '—'}</td><td>${m.pago ? nomeForma(m.forma_pagamento) : '—'}</td><td>${esc(m.pago_por_nome || '—')}</td></tr>`;
+  }).join('');
+  extratoAtual.totais = { pago, abertoV, atrasoV };
+  pegar('ext-totais').innerHTML = `<span>Pago: <b>${fmtBRL(pago)}</b></span><span>Em aberto: <b>${fmtBRL(abertoV)}</b></span><span>Atrasado: <b style="color:var(--red)">${fmtBRL(atrasoV)}</b></span>`;
+  abrirModal('modal-extrato');
+}
+pegar('ext-imprimir').addEventListener('click', () => {
+  if (!extratoAtual) return;
+  const { r, linhas, totais } = extratoAtual;
+  const w = window.open('', '_blank'); if (!w) { toast('O navegador bloqueou a janela. Permita pop-ups para imprimir.'); return; }
+  const corpo = linhas.map(({ c, m }) => `<tr><td>${esc(c.crianca.nome)}</td><td>${esc(MESES_LONGO[m.mes - 1])}</td><td>${fmtDia(m.vencimento)}</td><td>${fmtBRL(m.valor)}</td><td>${m.pago ? 'Pago' : estaAtrasada(m) ? 'Atrasado' : 'A vencer'}</td><td>${m.pago ? fmtDia(m.pago_em) : '—'}</td><td>${m.pago ? nomeForma(m.forma_pagamento) : '—'}</td></tr>`).join('');
+  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Extrato ${esc(r.nome)} · ${ANO}</title><style>body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 20px;color:#111;font-size:13px}h1{font-size:18px;margin:0 0 4px}p{margin:0 0 16px;color:#555}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #ddd}th{font-size:11px;text-transform:uppercase;color:#666}.tot{margin-top:16px;display:flex;gap:24px}.dica{font-size:12px;color:#666}@media print{.dica{display:none}}</style></head><body><p class="dica">Use Ctrl+P e escolha "Salvar como PDF".</p><h1>Extrato de mensalidades ${ANO}</h1><p>Van Escolar Tia Patrícia e Tio Vitor · Responsável: ${esc(r.nome)} · CPF ${fmtCPF(r.cpf)} · Emitido em ${fmtDia(hojeISO())}</p><table><thead><tr><th>Criança</th><th>Mês</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Pago em</th><th>Forma</th></tr></thead><tbody>${corpo}</tbody></table><div class="tot"><span>Pago: <b>${fmtBRL(totais.pago)}</b></span><span>Em aberto: <b>${fmtBRL(totais.abertoV)}</b></span><span>Atrasado: <b>${fmtBRL(totais.atrasoV)}</b></span></div><script>setTimeout(function(){window.print()},300)<\/script></body></html>`);
+  w.document.close();
 });
 
 /* ---------- responsáveis ---------- */
@@ -405,7 +562,7 @@ async function apagarResponsavel(id) {
   const assinados = x.contratos.filter(c => c.status === 'assinado').length;
   const pdfs = x.contratos.filter(c => c.assinatura && c.assinatura.pdf).map(c => c.assinatura.pdf);
   let msg = `Apagar o cadastro de ${x.r.nome}?\n\nSerão apagados para sempre: ${x.filhos.size} criança(s) e ${x.contratos.length} contrato(s)`;
-  if (assinados) msg += `, sendo ${assinados} ASSINADO(S), junto com o comprovante de assinatura`;
+  if (assinados) msg += `, sendo ${assinados} ASSINADO(S), junto com o comprovante de assinatura e as mensalidades`;
   if (pdfs.length) msg += ` e ${pdfs.length} PDF(s) assinado(s)`;
   msg += '.\n\nIsso não tem desfazer. Para confirmar, digite APAGAR:';
   const digitado = prompt(msg); if (digitado === null) return;

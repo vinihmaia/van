@@ -109,18 +109,36 @@
     </section>
 
     <section class="screen" id="tela-financeiro">
-      <div class="head"><div><h1>Financeiro 2027</h1><p class="sub">Só contratos assinados aparecem aqui · <span class="demo">Prévia da fase 2</span></p></div></div>
-      <div class="stats">
-        <div class="stat"><div class="lbl">Recebido</div><b class="ok" id="fin-recebido">R$ 0,00</b></div>
-        <div class="stat"><div class="lbl">Em aberto no ano</div><b id="fin-aberto">R$ 0,00</b></div>
-        <div class="stat"><div class="lbl">Meses atrasados</div><b class="warn" id="fin-atrasados">0</b></div>
+      <div class="head">
+        <div><h1>Financeiro 2027</h1><p class="sub">Clique no mês para registrar o pagamento, ou no nome do responsável para ver o extrato.</p></div>
+        <div class="acts"><button class="btn ghost" id="fin-exportar" type="button">Exportar planilha</button></div>
       </div>
+      <div class="stats">
+        <div class="stat"><div class="lbl">Recebido no ano</div><b class="ok" id="fin-recebido">R$ 0,00</b><small id="fin-formas">Dinheiro R$ 0,00 · Pix R$ 0,00</small></div>
+        <div class="stat"><div class="lbl">Recebido este mês</div><b id="fin-mes">R$ 0,00</b><small id="fin-mes-nome"></small></div>
+        <div class="stat"><div class="lbl">Em aberto no ano</div><b id="fin-aberto">R$ 0,00</b></div>
+        <div class="stat"><div class="lbl">Atrasados</div><b class="warn" id="fin-atrasados">0</b><small id="fin-atrasados-valor">R$ 0,00</small></div>
+      </div>
+      <div class="aviso-venc" id="fin-proximos" hidden></div>
+
+      <div id="fin-bloco-atrasos" hidden>
+        <div class="secao"><h2>Mensalidades atrasadas <span id="fin-atrasos-qtd"></span></h2></div>
+        <div class="tabela atrasos"><table><thead><tr><th>Responsável</th><th>Criança</th><th>Mês</th><th>Valor</th><th>Atraso</th><th></th></tr></thead><tbody id="tab-atrasos"></tbody></table></div>
+      </div>
+
+      <div class="secao"><h2>Mensalidades por contrato</h2></div>
+      <div class="filtros">
+        <button class="chip on" data-ff="todos" type="button">Todos</button><button class="chip" data-ff="atraso" type="button">Com atraso</button><button class="chip" data-ff="emdia" type="button">Em dia</button>
+        <input class="busca" id="fin-busca" type="search" placeholder="Buscar por responsável ou criança">
+      </div>
+      <p class="legenda"><span><i class="d"></i>Pago em dinheiro (D)</span><span><i class="p"></i>Pago no Pix (P)</span><span><i class="a"></i>Atrasado</span><span><i></i>A vencer</span></p>
       <div class="tabela"><table class="fin"><thead><tr><th>Contrato</th><th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th><th>Pagos</th></tr></thead><tbody id="tab-fin"></tbody></table></div>
     </section>
 
     <section class="screen" id="tela-responsaveis">
       <div class="head"><div><h1>Responsáveis</h1><p class="sub">Quem assina os contratos. Um responsável pode ter mais de uma criança.</p></div></div>
-          <div class="tabela"><table><thead><tr><th>Responsável</th><th>Contato</th><th>Criança(s)</th><th>Contratos</th><th></th></tr></thead><tbody id="tab-resp"></tbody></table></div>
+      <div class="tabela"><table><thead><tr><th>Responsável</th><th>Contato</th><th>Criança(s)</th><th>Contratos</th><th></th></tr></thead><tbody id="tab-resp"></tbody></table></div>
+    </section>
 
   </main>
 </div>
@@ -143,6 +161,36 @@
     <div class="ok-box" id="ass-ok" hidden></div>
   </div>
 </section>
+
+<!-- ===== JANELA: REGISTRAR PAGAMENTO ===== -->
+<div class="modal-fundo" id="modal-pag" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pag-titulo">
+    <h2 id="pag-titulo">Registrar pagamento</h2>
+    <p class="sub" id="pag-sub"></p>
+    <div class="info" id="pag-info"></div>
+    <form id="form-pag">
+      <span class="campo">Forma de pagamento</span>
+      <div class="rads"><label class="rad"><input type="radio" name="forma" value="dinheiro" required>Dinheiro</label><label class="rad"><input type="radio" name="forma" value="pix">Pix</label></div>
+      <label class="campo" style="margin-top:12px">Data do pagamento<input type="date" name="data" required></label>
+      <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn" type="submit" id="pag-confirmar">Confirmar pagamento</button></div>
+    </form>
+    <div id="pag-pago" hidden>
+      <div class="facts"><button class="link" id="pag-desfazer" type="button">Desfazer pagamento</button><button class="btn" type="button" data-fechar>Fechar</button></div>
+    </div>
+    <p class="erro" id="pag-erro"></p>
+  </div>
+</div>
+
+<!-- ===== JANELA: EXTRATO DO RESPONSÁVEL ===== -->
+<div class="modal-fundo" id="modal-extrato" hidden>
+  <div class="modal largo" role="dialog" aria-modal="true" aria-labelledby="ext-titulo">
+    <h2 id="ext-titulo">Extrato</h2>
+    <p class="sub" id="ext-sub"></p>
+    <div class="tabela"><table><thead><tr><th>Criança</th><th>Mês</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Pago em</th><th>Forma</th><th>Registrado por</th></tr></thead><tbody id="tab-extrato"></tbody></table></div>
+    <div class="totais" id="ext-totais"></div>
+    <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn" type="button" id="ext-imprimir">Imprimir ou salvar PDF</button></div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
