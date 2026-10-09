@@ -35,6 +35,18 @@ function mensagemWhatsApp(c) {
     `Na página, clique em "Receber código por e-mail". O código chega em ${c.responsavel.email} e vale por 15 minutos.\n` +
     `Se não aparecer na caixa de entrada, confira a pasta de lixo eletrônico (spam).`;
 }
+/* Link wa.me: abre a conversa com o responsável e a mensagem já escrita (nada é enviado sozinho) */
+function linkWhatsApp(c) {
+  let n = soDigitos(c.responsavel.tel);
+  if (n.length === 10 || n.length === 11) n = '55' + n;
+  if (!/^55\d{10,11}$/.test(n)) return null;
+  return 'https://wa.me/' + n + '?text=' + encodeURIComponent(mensagemWhatsApp(c));
+}
+function abrirWhatsApp(c) {
+  const url = linkWhatsApp(c);
+  if (!url) { toast('WhatsApp do responsável vazio ou incompleto. Use "Copiar mensagem" e envie pelo seu WhatsApp.'); return; }
+  window.open(url, '_blank', 'noopener');
+}
 async function copiar(t) {
   const aviso = 'Mensagem copiada. Cole no WhatsApp do responsável.';
   try { await navigator.clipboard.writeText(t); toast(aviso); } catch (e) { prompt('Copie a mensagem:', t); }
@@ -148,13 +160,13 @@ function renderContratos() {
   document.getElementById('st-vagas').textContent = 'M ' + (LUGARES - ocup('Manhã')) + ' · T ' + (LUGARES - ocup('Tarde'));
   const b = busca.toLowerCase();
   const lista = cs.filter(c => (filtro === 'todos' || c.status === filtro) && (!b || (c.responsavel.nome + ' ' + c.crianca.nome + ' ' + c.bairro).toLowerCase().includes(b)));
-  const acao = c => c.status === 'aguardando' ? `<button class="btn ghost sm" data-copiar="${c.id}" type="button">Copiar mensagem</button>` : c.status === 'assinado' ? `<button class="btn ghost sm" data-pdf="${c.id}" type="button">PDF</button>` : c.status === 'rascunho' ? `<button class="btn ghost sm" data-editar="${c.id}" type="button">Editar</button>` : '';
+  const acao = c => c.status === 'aguardando' ? `<button class="btn or sm" data-whats="${c.id}" type="button">WhatsApp</button> <button class="btn ghost sm" data-copiar="${c.id}" type="button">Copiar mensagem</button>` : c.status === 'assinado' ? `<button class="btn ghost sm" data-pdf="${c.id}" type="button">PDF</button>` : c.status === 'rascunho' ? `<button class="btn ghost sm" data-editar="${c.id}" type="button">Editar</button>` : '';
   const vazio = cs.length ? 'Nenhum contrato aqui.' : 'Nenhum contrato ainda. Clique em "+ Novo contrato" para começar.';
-  document.getElementById('tab-contratos').innerHTML = lista.length ? lista.map(c => `<tr class="clicavel" data-id="${c.id}"><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}<small>${esc(c.crianca.serie)}</small></td><td>${esc(c.turma)}</td><td>${fmtBRL(c.mensalidade)}</td><td><span class="tag ${c.status}">${rotulo(c)}</span></td><td>${acao(c)}</td></tr>`).join('') : `<tr><td colspan="6" class="vazio">${vazio}</td></tr>`;
+  document.getElementById('tab-contratos').innerHTML = lista.length ? lista.map(c => `<tr class="clicavel" data-id="${c.id}"><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}<small>${esc(c.crianca.serie)}</small></td><td>${esc(c.turma)}</td><td>${fmtBRL(c.mensalidade)}</td><td><span class="tag ${c.status}">${rotulo(c)}</span></td><td style="white-space:nowrap">${acao(c)}</td></tr>`).join('') : `<tr><td colspan="6" class="vazio">${vazio}</td></tr>`;
 }
 document.getElementById('tab-contratos').addEventListener('click', e => {
   const b = e.target.closest('button');
-  if (b) { e.stopPropagation(); if (b.dataset.copiar) copiar(mensagemWhatsApp(achar(b.dataset.copiar))); if (b.dataset.pdf) abrirPDF(achar(b.dataset.pdf)); if (b.dataset.editar) irPara('#novo/' + b.dataset.editar); return; }
+  if (b) { e.stopPropagation(); if (b.dataset.whats) abrirWhatsApp(achar(b.dataset.whats)); if (b.dataset.copiar) copiar(mensagemWhatsApp(achar(b.dataset.copiar))); if (b.dataset.pdf) abrirPDF(achar(b.dataset.pdf)); if (b.dataset.editar) irPara('#novo/' + b.dataset.editar); return; }
   const tr = e.target.closest('tr[data-id]'); if (tr) irPara('#contrato/' + tr.dataset.id);
 });
 document.querySelectorAll('.chip[data-f]').forEach(ch => ch.addEventListener('click', () => { filtro = ch.dataset.f; document.querySelectorAll('.chip[data-f]').forEach(x => x.classList.toggle('on', x === ch)); renderContratos(); }));
@@ -205,7 +217,7 @@ async function gravar(status) {
   if (error) { erroEl.textContent = traduzErro(error); return; }
   await recarregar();
   irPara('#contrato/' + data);
-  toast(status === 'aguardando' ? 'Contrato gerado. Copie a mensagem e envie no WhatsApp.' : 'Rascunho salvo.');
+  toast(status === 'aguardando' ? 'Contrato gerado. Clique em "Enviar no WhatsApp".' : 'Rascunho salvo.');
 }
 formC.addEventListener('submit', e => { e.preventDefault(); gravar('aguardando'); });
 document.getElementById('salvar-rascunho').addEventListener('click', () => gravar('rascunho'));
@@ -226,7 +238,7 @@ function telaDetalhe(id) {
   let marcouAtual = false;
   document.getElementById('det-tl').innerHTML = passos.map(([t, s, feito], i) => { const cls = feito ? 'feito' : (!marcouAtual ? (marcouAtual = true, 'atual') : ''); return `<li class="${cls}"><i>${feito ? '✓' : i + 1}</i><div>${t}<small>${esc(s)}</small></div></li>`; }).join('');
   const mostra = (id, sim) => { document.getElementById(id).hidden = !sim; };
-  mostra('det-gerar', c.status === 'rascunho'); mostra('det-editar', c.status === 'rascunho'); mostra('det-copiar', c.status === 'aguardando'); mostra('det-pdf', c.status !== 'rascunho'); mostra('det-cancelar', c.status === 'rascunho' || c.status === 'aguardando');
+  mostra('det-gerar', c.status === 'rascunho'); mostra('det-editar', c.status === 'rascunho'); mostra('det-copiar', c.status === 'aguardando'); mostra('det-whats', c.status === 'aguardando'); mostra('det-pdf', c.status !== 'rascunho'); mostra('det-cancelar', c.status === 'rascunho' || c.status === 'aguardando');
 }
 /* Atualiza o contrato só se ele ainda estiver num dos status permitidos */
 async function atualizarContrato(id, campos, statusPermitidos) {
@@ -240,10 +252,15 @@ document.getElementById('det-gerar').addEventListener('click', async e => {
   const b = e.currentTarget; b.disabled = true;
   const ok = await atualizarContrato(atual.id, { status: 'aguardando', enviado_em: atual.enviadoEm || agora() }, ['rascunho']);
   b.disabled = false; telaDetalhe(atual.id);
-  if (ok) toast('Link gerado. Copie a mensagem e envie no WhatsApp.');
+  if (ok) toast('Link gerado. Clique em "Enviar no WhatsApp".');
 });
 document.getElementById('det-editar').addEventListener('click', () => irPara('#novo/' + atual.id));
 document.getElementById('det-copiar').addEventListener('click', () => copiar(mensagemWhatsApp(atual)));
+/* Botão "Enviar no WhatsApp", criado ao lado do "Copiar" */
+const detWhats = document.createElement('button');
+detWhats.className = 'btn or sm'; detWhats.id = 'det-whats'; detWhats.type = 'button'; detWhats.textContent = 'Enviar no WhatsApp';
+document.getElementById('det-copiar').after(detWhats);
+detWhats.addEventListener('click', () => abrirWhatsApp(atual));
 document.getElementById('det-pdf').addEventListener('click', () => abrirPDF(atual));
 document.getElementById('det-cancelar').addEventListener('click', async () => {
   if (!confirm('Cancelar este contrato?')) return;
