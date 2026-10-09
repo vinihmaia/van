@@ -386,15 +386,27 @@ document.getElementById('tab-resp').addEventListener('click', e => { const b = e
 async function apagarResponsavel(id) {
   const x = agruparResponsaveis()[id]; if (!x) return;
   const assinados = x.contratos.filter(c => c.status === 'assinado').length;
+  const pdfs = x.contratos.filter(c => c.assinatura && c.assinatura.pdf).map(c => c.assinatura.pdf);
   let msg = `Apagar o cadastro de ${x.r.nome}?\n\nSerão apagados para sempre: ${x.filhos.size} criança(s) e ${x.contratos.length} contrato(s)`;
   if (assinados) msg += `, sendo ${assinados} ASSINADO(S), junto com o comprovante de assinatura`;
+  if (pdfs.length) msg += ` e ${pdfs.length} PDF(s) assinado(s)`;
   msg += '.\n\nIsso não tem desfazer. Para confirmar, digite APAGAR:';
   const digitado = prompt(msg); if (digitado === null) return;
   if (digitado.trim().toUpperCase() !== 'APAGAR') { toast('Nada foi apagado: a palavra não confere.'); return; }
+
+  // 1º os PDFs: se falhar, o cadastro fica intacto
+  if (pdfs.length) {
+    const { data: removidos, error: eArq } = await sb.storage.from('contratos').remove(pdfs);
+    if (eArq) { toast('Não foi possível apagar o PDF: ' + traduzErro(eArq) + ' Nada foi apagado.'); return; }
+    const faltam = pdfs.length - (removidos ? removidos.length : 0);
+    if (faltam > 0 && !confirm(`${faltam} PDF(s) não foram encontrados ou não puderam ser apagados.\n\nSe você já apagou esse arquivo à mão no Supabase, pode continuar. Caso contrário, cancele e me avise.\n\nContinuar apagando o cadastro?`)) return;
+  }
+
+  // 2º o cadastro (a cascata leva crianças, contratos, assinaturas e mensalidades)
   const { data, error } = await sb.from('responsaveis').delete().eq('id', id).select('id');
   if (error) { toast(traduzErro(error)); return; }
   await recarregar(); renderResponsaveis();
-  toast(data.length ? 'Cadastro apagado.' : 'Este cadastro já não existia. A tela foi atualizada.');
+  toast(data.length ? 'Cadastro e arquivos apagados.' : 'Este cadastro já não existia. A tela foi atualizada.');
 }
 
 /* ---------- início ---------- */
