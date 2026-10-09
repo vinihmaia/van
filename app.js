@@ -1,7 +1,7 @@
 /* =================== VAN PV · painel conectado ao banco (Supabase) ===================
    Os dados ficam no banco. O navegador guarda só a sessão de login.
    A assinatura online (etapa 6) ainda não está ativa: o link mostra um aviso. */
-const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = false;
+const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = true;
 const SERIES = ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'];
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -47,11 +47,11 @@ function deBanco(r) {
   (r.mensalidades || []).forEach(m => { if (m.ano === ANO) mens[m.mes] = m; });
   return {
     id: r.id, token: r.token, status: r.status, criadoEm: r.criado_em, enviadoEm: r.enviado_em,
-    responsavel: { nome: resp.nome || '', cpf: resp.cpf || '', tel: resp.telefone || '', email: resp.email || '' },
+    responsavel: { id: resp.id, nome: resp.nome || '', cpf: resp.cpf || '', tel: resp.telefone || '', email: resp.email || '' },
     crianca: { nome: cri.nome || '', serie: cri.serie || '' },
     turma: r.turma, endereco: r.endereco || '', bairro: r.bairro || '', mensalidade: Number(r.mensalidade),
     vencimento: r.vencimento, inicio: r.inicio, fim: r.fim, vale: r.vale_desconto, obs: r.observacoes || '',
-    assinatura: a ? { nome: a.nome, cpf: a.cpf, em: a.assinado_em, ip: a.ip || '—', hash: a.hash_documento } : null,
+    assinatura: a ? { nome: a.nome, cpf: a.cpf, em: a.assinado_em, ip: a.ip || '—', hash: a.hash_documento, pdf: a.pdf_caminho } : null,
     mensalidades: mens
   };
 }
@@ -247,7 +247,15 @@ document.getElementById('det-cancelar').addEventListener('click', async () => {
 });
 
 /* ---------- PDF: abre uma página pronta para "Salvar como PDF" ---------- */
+async function baixarPDFAssinado(c) {
+  const w = window.open('', '_blank'); if (!w) { toast('O navegador bloqueou a janela. Permita pop-ups para baixar o PDF.'); return; }
+  w.document.write('<p style="font-family:sans-serif;padding:20px">Abrindo o PDF assinado…</p>');
+  const { data, error } = await sb.storage.from('contratos').createSignedUrl(c.assinatura.pdf, 300);
+  if (error || !data) { w.close(); toast('Não foi possível abrir o PDF: ' + traduzErro(error)); return; }
+  w.location.href = data.signedUrl;
+}
 function abrirPDF(c) {
+  if (c.assinatura && c.assinatura.pdf) { baixarPDFAssinado(c); return; }
   const w = window.open('', '_blank'); if (!w) { toast('O navegador bloqueou a janela. Permita pop-ups para gerar o PDF.'); return; }
   const a = c.assinatura;
   const ass = a ? `ASSINATURA ELETRÔNICA\nAssinado por ${a.nome}, CPF ${fmtCPF(a.cpf)}, em ${fmtData(a.em, true)}.\nEndereço de rede (IP): ${a.ip}\nImpressão digital do documento: ${a.hash}` : 'Documento ainda sem assinatura.';
@@ -256,11 +264,73 @@ function abrirPDF(c) {
 }
 
 /* ---------- tela do responsável: aviso até a etapa 6 ---------- */
-function telaAssinar() {
-  document.getElementById('form-assinar').hidden = true;
-  document.getElementById('ass-ok').hidden = true;
-  document.getElementById('ass-texto').textContent = 'A assinatura online ainda não está disponível. Se você recebeu este link, aguarde: a equipe da van vai avisar quando estiver liberada.';
+/* ---------- tela do responsável: assinatura de verdade (Edge Function) ---------- */
+const FN_URL = (CFG.supabaseUrl || '') + '/functions/v1/assinatura';
+const elA = id => document.getElementById(id);
+const formA = elA('form-assinar');
+let tokenAtual = '';
+
+/* Botão "Receber código" e aviso, criados uma vez acima do campo do código */
+const boxCodigo = document.createElement('div');
+boxCodigo.className = 'codigo-demo';
+boxCodigo.innerHTML = '<button class="btn ghost sm" id="ass-enviar" type="button">Receber código por e-mail</button><span id="ass-info" style="display:block;margin-top:8px"></span>';
+formA.elements.codigo.closest('label').before(boxCodigo);
+
+async function chamarAssinatura(dados) {
+  try {
+    const r = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return { erro: j.erro || 'Não foi possível concluir. Tente de novo.' };
+    return j;
+  } catch (e) { return { erro: 'Sem conexão. Confira a internet e tente de novo.' }; }
 }
+function mostrarAssinado(nome, em, pdfUrl, extra) {
+  const ok = elA('ass-ok'); ok.hidden = false;
+  ok.innerHTML = `<b>Contrato assinado</b>Assinado por ${esc(nome)} em ${fmtData(em, true)}.` +
+    (pdfUrl ? `<br><a href="${esc(pdfUrl)}" target="_blank" rel="noopener">Baixar PDF assinado</a>` : '') +
+    (extra ? '<br>' + esc(extra) : '');
+}
+async function telaAssinar(tok) {
+  tokenAtual = tok || '';
+  const texto = elA('ass-texto');
+  formA.hidden = true; elA('ass-ok').hidden = true; formA.reset();
+  elA('erro-assinar').textContent = ''; elA('ass-info').textContent = '';
+  const bEnviar = elA('ass-enviar'); bEnviar.disabled = false; bEnviar.textContent = 'Receber código por e-mail';
+  texto.textContent = 'Carregando o contrato…';
+  const r = await chamarAssinatura({ acao: 'ver', token: tokenAtual });
+  if (r.erro) { texto.textContent = r.erro; return; }
+  if (r.status === 'assinado' && r.assinatura) { texto.textContent = 'Este contrato já foi assinado.'; mostrarAssinado(r.assinatura.nome, r.assinatura.em, r.pdfUrl); return; }
+  if (r.status !== 'aguardando') { texto.textContent = 'Este contrato não está disponível para assinatura. Fale com a equipe da van.'; return; }
+  texto.textContent = r.texto;
+  elA('ass-info').textContent = 'O código será enviado para ' + r.emailMascarado + '.';
+  formA.hidden = false;
+}
+elA('ass-enviar').addEventListener('click', async e => {
+  const b = e.currentTarget; b.disabled = true; elA('erro-assinar').textContent = '';
+  const r = await chamarAssinatura({ acao: 'enviar-codigo', token: tokenAtual });
+  if (r.erro) { elA('erro-assinar').textContent = r.erro; b.disabled = false; return; }
+  elA('ass-info').textContent = `Enviamos um código para ${r.emailMascarado}. Ele vale por ${r.validadeMin} minutos. Confira também a caixa de spam.`;
+  b.textContent = 'Reenviar código (aguarde 1 minuto)';
+  setTimeout(() => { b.disabled = false; b.textContent = 'Reenviar código'; }, 60000);
+});
+formA.addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = formA.elements, erro = elA('erro-assinar'), btn = formA.querySelector('button[type=submit]');
+  erro.textContent = '';
+  if (!f.aceite.checked) { erro.textContent = 'Marque que leu e concorda com o contrato.'; return; }
+  if (!f.nome.value.trim()) { erro.textContent = 'Digite seu nome completo.'; return; }
+  if (soDigitos(f.cpf.value).length !== 11) { erro.textContent = 'O CPF precisa ter 11 números.'; return; }
+  if (soDigitos(f.codigo.value).length !== 6) { erro.textContent = 'Digite os 6 números do código.'; return; }
+  btn.disabled = true; btn.textContent = 'Assinando…';
+  const r = await chamarAssinatura({ acao: 'assinar', token: tokenAtual, aceite: true, nome: f.nome.value.trim(), cpf: f.cpf.value, codigo: f.codigo.value });
+  btn.disabled = false; btn.textContent = 'Assinar contrato';
+  if (r.erro) { erro.textContent = r.erro; return; }
+  const v = await chamarAssinatura({ acao: 'ver', token: tokenAtual });
+  formA.hidden = true;
+  elA('ass-texto').textContent = 'Assinatura registrada. Obrigado!';
+  mostrarAssinado(r.nome, r.em, v.pdfUrl, r.emailOk ? 'Uma cópia do PDF foi enviada para o seu e-mail.' : 'Não conseguimos enviar o PDF por e-mail agora. Use o link acima para baixar.');
+  window.scrollTo(0, 0);
+});
 
 /* ---------- financeiro (prévia da fase 2) ---------- */
 function renderFinanceiro() {
@@ -293,12 +363,33 @@ document.getElementById('tab-fin').addEventListener('click', async e => {
 });
 
 /* ---------- responsáveis ---------- */
+const nomeStatus = { assinado: 'Assinado', aguardando: 'Aguardando assinatura', rascunho: 'Rascunho', cancelado: 'Cancelado' };
+function agruparResponsaveis() {
+  const porId = {};
+  DB.contratos.forEach(c => {
+    const k = c.responsavel.id;
+    porId[k] = porId[k] || { r: c.responsavel, filhos: new Set(), status: [], contratos: [] };
+    porId[k].filhos.add(c.crianca.nome); porId[k].status.push(c.status); porId[k].contratos.push(c);
+  });
+  return porId;
+}
 function renderResponsaveis() {
-  const nomeStatus = { assinado: 'Assinado', aguardando: 'Aguardando assinatura', rascunho: 'Rascunho', cancelado: 'Cancelado' };
-  const porCPF = {};
-  DB.contratos.forEach(c => { const k = c.responsavel.cpf; porCPF[k] = porCPF[k] || { r: c.responsavel, filhos: [], status: [] }; porCPF[k].filhos.push(c.crianca.nome); porCPF[k].status.push(c.status); });
-  const lista = Object.values(porCPF);
-  document.getElementById('tab-resp').innerHTML = lista.length ? lista.map(x => `<tr><td>${esc(x.r.nome)}<small>CPF ${fmtCPF(x.r.cpf)}</small></td><td>${esc(x.r.tel)}<small>${esc(x.r.email)}</small></td><td>${esc(x.filhos.join(', '))}</td><td>${x.status.map(s => `<span class="tag ${s}">${nomeStatus[s] || s}</span>`).join(' ')}</td></tr>`).join('') : '<tr><td colspan="4" class="vazio">Nenhum responsável cadastrado.</td></tr>';
+  const lista = Object.values(agruparResponsaveis());
+  document.getElementById('tab-resp').innerHTML = lista.length ? lista.map(x => `<tr><td>${esc(x.r.nome)}<small>CPF ${fmtCPF(x.r.cpf)}</small></td><td>${esc(x.r.tel)}<small>${esc(x.r.email)}</small></td><td>${esc([...x.filhos].join(', '))}</td><td>${x.status.map(s => `<span class="tag ${s}">${nomeStatus[s] || s}</span>`).join(' ')}</td><td><button class="link" data-apagar="${x.r.id}" type="button">Apagar cadastro</button></td></tr>`).join('') : '<tr><td colspan="5" class="vazio">Nenhum responsável cadastrado.</td></tr>';
+}
+document.getElementById('tab-resp').addEventListener('click', e => { const b = e.target.closest('button[data-apagar]'); if (b) apagarResponsavel(b.dataset.apagar); });
+async function apagarResponsavel(id) {
+  const x = agruparResponsaveis()[id]; if (!x) return;
+  const assinados = x.contratos.filter(c => c.status === 'assinado').length;
+  let msg = `Apagar o cadastro de ${x.r.nome}?\n\nSerão apagados para sempre: ${x.filhos.size} criança(s) e ${x.contratos.length} contrato(s)`;
+  if (assinados) msg += `, sendo ${assinados} ASSINADO(S), junto com o comprovante de assinatura`;
+  msg += '.\n\nIsso não tem desfazer. Para confirmar, digite APAGAR:';
+  const digitado = prompt(msg); if (digitado === null) return;
+  if (digitado.trim().toUpperCase() !== 'APAGAR') { toast('Nada foi apagado: a palavra não confere.'); return; }
+  const { data, error } = await sb.from('responsaveis').delete().eq('id', id).select('id');
+  if (error) { toast(traduzErro(error)); return; }
+  await recarregar(); renderResponsaveis();
+  toast(data.length ? 'Cadastro apagado.' : 'Este cadastro já não existia. A tela foi atualizada.');
 }
 
 /* ---------- início ---------- */
