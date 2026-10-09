@@ -175,6 +175,13 @@ td small{display:block;font-size:12px;color:var(--mu2);margin-top:2px}
 .totais b{font-weight:600}
 body.travado{overflow:hidden}
 
+/* ===== AVISO DE PRIVACIDADE (página de assinatura) ===== */
+.privacidade{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:12.5px;line-height:1.6;color:var(--mu)}
+.privacidade summary{cursor:pointer;font-weight:600;color:var(--tx);font-size:13px}
+.privacidade p{margin:10px 0 0}
+.privacidade b{color:var(--tx);font-weight:600}
+.privacidade a{color:var(--ac)}
+
 /* ===== AVISO (toast) ===== */
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--dk);color:#fff;border-radius:999px;padding:11px 18px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:100}
 .toast.on{opacity:1;transform:translate(-50%,0)}

@@ -6,6 +6,13 @@
 <title>Van PV · Gestão de contratos</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0A0608">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Van PV">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600&display=swap" rel="stylesheet">
@@ -23,15 +30,40 @@
 <section class="screen login" id="tela-login">
   <div class="lcard">
     <div class="marca"><svg viewBox="0 0 360 120" aria-label="vitrapi"><use href="#vitrapi-escuro"/></svg><span>Tia Patrícia e Tio Vitor</span></div>
-    <h1>Entrar no painel</h1>
+    <h1 id="login-titulo">Entrar no painel</h1>
     <p class="sub">Gestão de contratos e financeiro da van</p>
     <form id="form-login">
       <label class="campo">E-mail<input id="login-email" type="email" required autocomplete="username" placeholder="voce@exemplo.com"></label>
       <label class="campo" style="margin-top:12px">Senha<input id="login-senha" type="password" required autocomplete="current-password" placeholder="••••••••"></label>
       <p class="erro" id="erro-login"></p>
       <button class="btn" id="login-btn" type="submit">Entrar</button>
+      <p style="text-align:center;margin:14px 0 0"><button class="link" id="esqueci" type="button">Esqueci minha senha</button></p>
+    </form>
+    <form id="form-recuperar" hidden>
+      <p class="sub" style="text-align:center;margin-bottom:14px">Digite o e-mail do seu login. Vamos enviar um link para você criar uma nova senha.</p>
+      <label class="campo">E-mail<input id="rec-email" type="email" required autocomplete="username" placeholder="voce@exemplo.com"></label>
+      <p class="erro" id="erro-rec"></p>
+      <p class="sub" id="rec-ok" style="text-align:center;color:var(--oktx)" hidden></p>
+      <button class="btn" id="rec-btn" type="submit">Enviar link</button>
+      <p style="text-align:center;margin:14px 0 0"><button class="link" id="rec-voltar" type="button">Voltar para o login</button></p>
     </form>
     <p class="aviso">Acesso restrito à equipe da van.</p>
+  </div>
+</section>
+
+<!-- ===== CRIAR NOVA SENHA ===== -->
+<section class="screen login" id="tela-nova-senha">
+  <div class="lcard">
+    <div class="marca"><svg viewBox="0 0 360 120" aria-label="vitrapi"><use href="#vitrapi-escuro"/></svg><span>Tia Patrícia e Tio Vitor</span></div>
+    <h1>Criar nova senha</h1>
+    <p class="sub">Use pelo menos 8 caracteres. Misturar letras e números deixa a senha mais segura.</p>
+    <form id="form-nova-senha">
+      <label class="campo">Nova senha<input id="ns-senha" type="password" required minlength="8" autocomplete="new-password"></label>
+      <label class="campo" style="margin-top:12px">Repita a nova senha<input id="ns-senha2" type="password" required minlength="8" autocomplete="new-password"></label>
+      <p class="erro" id="erro-ns"></p>
+      <button class="btn" id="ns-btn" type="submit">Salvar nova senha</button>
+    </form>
+    <p style="text-align:center;margin:14px 0 0"><a class="link" href="#contratos">Voltar ao painel</a></p>
   </div>
 </section>
 
@@ -41,7 +73,7 @@
     <div class="topin">
       <div class="marca"><svg viewBox="0 0 360 120" aria-label="vitrapi"><use href="#vitrapi"/></svg><span>Tia Patrícia e Tio Vitor</span></div>
       <nav class="tabs" aria-label="Seções"><a href="#contratos" data-tab="contratos">Contratos</a><a href="#financeiro" data-tab="financeiro">Financeiro</a><a href="#responsaveis" data-tab="responsaveis">Responsáveis</a></nav>
-      <div class="quem"><span id="quem-email"></span><button class="link" id="sair" type="button">Sair</button></div>
+      <div class="quem"><span id="quem-email"></span><a class="link" href="#nova-senha">Trocar senha</a><button class="link" id="sair" type="button">Sair</button></div>
     </div>
   </header>
   <main class="wrap">
@@ -149,6 +181,15 @@
     <div class="marca"><svg viewBox="0 0 360 120" aria-label="vitrapi"><use href="#vitrapi-escuro"/></svg><span>Tia Patrícia e Tio Vitor</span></div>
     <div class="van"><svg aria-hidden="true"><use href="#pv-placa"/></svg><div><b>Contrato de transporte escolar 2027</b><span>Van Escolar Tia Patrícia e Tio Vitor</span></div></div>
     <div class="texto" id="ass-texto"></div>
+    <details class="privacidade">
+      <summary>Como usamos seus dados</summary>
+      <p><b>Quem cuida dos seus dados:</b> Van Escolar Tia Patrícia e Tio Vitor.</p>
+      <p><b>Quais dados guardamos:</b> nome, CPF, telefone e e-mail do responsável; nome e série da criança; endereço de embarque; e, na assinatura, a data e hora, o endereço de rede (IP) e a confirmação do código enviado por e-mail.</p>
+      <p><b>Para que usamos:</b> para formalizar e cumprir o contrato de transporte escolar, controlar as mensalidades e comprovar a assinatura.</p>
+      <p><b>Com quem compartilhamos:</b> não vendemos seus dados nem usamos para propaganda. Usamos serviços de tecnologia para guardar as informações e enviar e-mails (Supabase, Resend e Vercel).</p>
+      <p><b>Por quanto tempo:</b> durante o contrato e, depois do fim, pelo prazo exigido por lei, para comprovação e obrigações legais.</p>
+      <p><b>Seus direitos:</b> você pode pedir para ver, corrigir ou apagar seus dados pelo WhatsApp <a href="https://wa.me/5511996929358" target="_blank" rel="noopener">(11) 99692-9358</a> ou pelo e-mail <a href="mailto:tiapaty_2012@hotmail.com">tiapaty_2012@hotmail.com</a>.</p>
+    </details>
     <form class="assinar" id="form-assinar" hidden>
       <label class="check"><input type="checkbox" name="aceite">Li o contrato inteiro e concordo com todas as cláusulas.</label>
       <label class="campo">Seu nome completo<input name="nome" autocomplete="name"></label>
@@ -156,7 +197,7 @@
       <label class="campo">Código de 6 números recebido por e-mail<input name="codigo" inputmode="numeric" maxlength="6" placeholder="000000"></label>
       <p class="erro" id="erro-assinar"></p>
       <button class="btn or" type="submit">Assinar contrato</button>
-      <p class="sub" style="font-size:11.5px;line-height:1.5">Ao assinar, ficam registrados: data e hora, o código confirmado, o endereço de rede (IP) e a impressão digital do documento. O PDF assinado é enviado para o seu e-mail.</p>
+      <p class="sub" style="font-size:11.5px;line-height:1.5">Ao assinar, você declara ter lido o aviso "Como usamos seus dados" acima. Ficam registrados: data e hora, o código confirmado, o endereço de rede (IP) e a impressão digital do documento. O PDF assinado é enviado para o seu e-mail.</p>
     </form>
     <div class="ok-box" id="ass-ok" hidden></div>
   </div>

@@ -2,9 +2,17 @@
    Os dados ficam no banco. O navegador guarda só a sessão de login.
    A assinatura online usa a Edge Function "assinatura" no Supabase. */
 const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = true;
+const DIAS_LEMBRETE = 3; /* lembrar mensalidades que vencem de hoje até daqui a X dias */
 const SERIES = ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'];
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const MESES_LONGO = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+/* ---------- link de "esqueci minha senha" ----------
+   O link do e-mail chega com "type=recovery" no endereço. Lemos isso ANTES de criar a conexão,
+   porque a biblioteca do Supabase limpa o endereço logo em seguida. */
+const HASH_INICIAL = location.hash;
+const VEIO_RECUPERACAO = /type=recovery/.test(HASH_INICIAL);
+const ERRO_LINK = /error_code=/.test(HASH_INICIAL);
 
 /* ---------- conexão com o banco ---------- */
 const CFG = window.VAN_CONFIG || {};
@@ -44,10 +52,12 @@ function linkWa(tel, msg) {
   if (!/^55\d{10,11}$/.test(n)) return null;
   return 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg);
 }
+/* Devolve true se conseguiu abrir o WhatsApp */
 function abrirConversa(tel, msg) {
   const url = linkWa(tel, msg);
-  if (!url) { toast('WhatsApp do responsável vazio ou incompleto. Copie a mensagem e envie pelo seu WhatsApp.'); return; }
+  if (!url) { toast('WhatsApp do responsável vazio ou incompleto. Copie a mensagem e envie pelo seu WhatsApp.'); return false; }
   window.open(url, '_blank', 'noopener');
+  return true;
 }
 const abrirWhatsApp = c => abrirConversa(c.responsavel.tel, mensagemWhatsApp(c));
 async function copiar(t) {
@@ -59,7 +69,7 @@ function irPara(h) { if (location.hash === h) rota(); else location.hash = h; }
 /* ---------- estado (o que está carregado na tela) ---------- */
 let DB = { contratos: [] }, usuario = null, acessoOk = false, carregado = false;
 const achar = id => DB.contratos.find(c => c.id === id);
-function limparEstado() { DB.contratos = []; usuario = null; acessoOk = false; carregado = false; }
+function limparEstado() { DB.contratos = []; usuario = null; acessoOk = false; carregado = false; atualizarSelo(); }
 
 /* Converte uma linha do banco no formato que as telas usam */
 function deBanco(r) {
@@ -79,7 +89,7 @@ function deBanco(r) {
 async function recarregar() {
   const { data, error } = await sb.from('contratos').select(CAMPOS).order('criado_em', { ascending: false });
   if (error) { toast('Erro ao carregar: ' + traduzErro(error)); return false; }
-  DB.contratos = data.map(deBanco); carregado = true; return true;
+  DB.contratos = data.map(deBanco); carregado = true; atualizarSelo(); return true;
 }
 
 /* ---------- texto do contrato (MODELO DE DEMONSTRAÇÃO) ---------- */
@@ -113,6 +123,7 @@ async function rota() {
   if (tela === 'assinar') { mostrar('tela-assinar'); telaAssinar(param); window.scrollTo(0, 0); return; }
   if (!sb) { mostrar('tela-login'); erroLogin('Não foi possível carregar a conexão com o banco. Confira a internet e o arquivo config.js.'); document.getElementById('login-btn').disabled = true; return; }
   if (!usuario) { mostrar('tela-login'); return; }
+  if (tela === 'nova-senha') { mostrar('tela-nova-senha'); prepararNovaSenha(); window.scrollTo(0, 0); return; }
   if (!acessoOk) {
     const { data, error } = await sb.from('usuarios_painel').select('id').eq('id', usuario.id).maybeSingle();
     if (error) { mostrar('tela-login'); erroLogin(traduzErro(error)); return; }
@@ -150,7 +161,63 @@ document.getElementById('form-login').addEventListener('submit', async e => {
   senhaEl.value = ''; usuario = data.user; acessoOk = false; carregado = false;
   irPara('#contratos');
 });
-document.getElementById('sair').addEventListener('click', async () => { await sb.auth.signOut(); limparEstado(); irPara('#login'); });
+document.getElementById('sair').addEventListener('click', async () => { await sb.auth.signOut(); limparEstado(); modoRecuperar(false); irPara('#login'); });
+
+/* ---------- esqueci minha senha ---------- */
+function modoRecuperar(sim) {
+  document.getElementById('form-login').hidden = sim;
+  document.getElementById('form-recuperar').hidden = !sim;
+  document.getElementById('login-titulo').textContent = sim ? 'Recuperar senha' : 'Entrar no painel';
+  document.getElementById('erro-rec').textContent = '';
+  document.getElementById('rec-ok').hidden = true;
+  if (sim) { erroLogin(''); document.getElementById('rec-email').value = document.getElementById('login-email').value; document.getElementById('rec-btn').disabled = false; }
+}
+document.getElementById('esqueci').addEventListener('click', () => modoRecuperar(true));
+document.getElementById('rec-voltar').addEventListener('click', () => modoRecuperar(false));
+document.getElementById('form-recuperar').addEventListener('submit', async e => {
+  e.preventDefault(); if (!sb) return;
+  const email = document.getElementById('rec-email').value.trim(), btn = document.getElementById('rec-btn'), erro = document.getElementById('erro-rec'), ok = document.getElementById('rec-ok');
+  if (!email) return;
+  erro.textContent = ''; ok.hidden = true; btn.disabled = true; btn.textContent = 'Enviando…';
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  btn.textContent = 'Enviar link';
+  if (error) {
+    btn.disabled = false;
+    erro.textContent = /rate limit|seconds|too many/i.test(error.message) ? 'Muitos pedidos seguidos. Aguarde alguns minutos e tente de novo.' : traduzErro(error);
+    return;
+  }
+  ok.textContent = 'Se este e-mail tiver acesso ao painel, você vai receber um link em alguns minutos. Confira também o lixo eletrônico (spam).';
+  ok.hidden = false;
+  setTimeout(() => { btn.disabled = false; }, 60000);
+});
+
+/* ---------- criar nova senha (pelo link do e-mail ou pelo "Trocar senha") ---------- */
+function prepararNovaSenha() {
+  document.getElementById('form-nova-senha').reset();
+  document.getElementById('erro-ns').textContent = '';
+  const b = document.getElementById('ns-btn'); b.disabled = false; b.textContent = 'Salvar nova senha';
+}
+document.getElementById('form-nova-senha').addEventListener('submit', async e => {
+  e.preventDefault();
+  const s1 = document.getElementById('ns-senha').value, s2 = document.getElementById('ns-senha2').value, erro = document.getElementById('erro-ns'), btn = document.getElementById('ns-btn');
+  erro.textContent = '';
+  if (s1.length < 8) { erro.textContent = 'A senha precisa ter pelo menos 8 caracteres.'; return; }
+  if (s1 !== s2) { erro.textContent = 'As duas senhas não são iguais.'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  const { error } = await sb.auth.updateUser({ password: s1 });
+  btn.disabled = false; btn.textContent = 'Salvar nova senha';
+  if (error) {
+    const m = error.message || '';
+    erro.textContent = /different|same/i.test(m) ? 'A nova senha precisa ser diferente da atual.'
+      : /weak|short|least|characters/i.test(m) ? 'Senha fraca. Use pelo menos 8 caracteres, misturando letras e números.'
+      : /reauthentic|nonce/i.test(m) ? 'Por segurança, saia e entre de novo antes de trocar a senha.'
+      : traduzErro(error);
+    return;
+  }
+  prepararNovaSenha();
+  toast('Senha alterada.');
+  irPara('#contratos');
+});
 
 /* ---------- contratos: lista ---------- */
 let filtro = 'todos', busca = '';
@@ -367,6 +434,7 @@ const hojeMeioDia = () => { const d = new Date(); d.setHours(12, 0, 0, 0); retur
 const vencDe = m => new Date(m.vencimento + 'T12:00:00');
 const estaAtrasada = m => !m.pago && vencDe(m) < hojeMeioDia();
 const diasAtraso = m => Math.round((hojeMeioDia() - vencDe(m)) / 86400000);
+const diasAte = m => Math.round((vencDe(m) - hojeMeioDia()) / 86400000);
 const nomeForma = f => f === 'pix' ? 'Pix' : f === 'dinheiro' ? 'Dinheiro' : '—';
 const nomeMesAno = m => MESES_LONGO[m.mes - 1] + ' de ' + m.ano;
 
@@ -381,6 +449,60 @@ function todasMensalidades() {
 const acharMens = id => todasMensalidades().find(x => x.m.id === id);
 function mensagemCobranca(c, m) {
   return `Olá, ${primeiroNome(c.responsavel.nome)}! Lembrete: a mensalidade de ${MESES_LONGO[m.mes - 1]} do transporte escolar de ${c.crianca.nome} (${fmtBRL(m.valor)}, vencimento ${fmtDia(m.vencimento)}) ainda está em aberto.`;
+}
+
+/* ---------- lembretes de vencimento ---------- */
+/* Mensalidades não pagas que vencem de hoje até daqui a DIAS_LEMBRETE dias */
+const lembretesJanela = () => todasMensalidades().filter(({ m }) => { if (m.pago) return false; const d = diasAte(m); return d >= 0 && d <= DIAS_LEMBRETE; });
+function mensagemLembrete(c, m) {
+  return `Olá, ${primeiroNome(c.responsavel.nome)}! Lembrete: a mensalidade de ${MESES_LONGO[m.mes - 1]} do transporte escolar de ${c.crianca.nome} (${fmtBRL(m.valor)}) vence em ${fmtDia(m.vencimento).slice(0, 5)}. Se já pagou, desconsidere esta mensagem.`;
+}
+/* Número de lembretes pendentes ao lado do nome da aba "Financeiro" */
+function atualizarSelo() {
+  const aba = document.querySelector('.tabs a[data-tab="financeiro"]'); if (!aba) return;
+  const n = DB.contratos.length ? lembretesJanela().filter(({ m }) => !m.lembrete_em).length : 0;
+  aba.textContent = 'Financeiro' + (n ? ` (${n})` : '');
+}
+/* Bloco "Lembretes de hoje", criado no topo do Financeiro */
+const blocoLembretes = document.createElement('div');
+blocoLembretes.id = 'fin-bloco-lembretes'; blocoLembretes.hidden = true;
+blocoLembretes.innerHTML = `<div class="secao"><h2>Lembretes de hoje <span id="fin-lembretes-qtd" style="color:var(--warn)"></span></h2></div><p class="sub" style="margin:-4px 0 10px">Mensalidades que vencem de hoje até daqui a ${DIAS_LEMBRETE} dias.</p><div class="tabela atrasos"><table><thead><tr><th>Responsável</th><th>Criança</th><th>Mês</th><th>Valor</th><th>Vence</th><th></th></tr></thead><tbody id="tab-lembretes"></tbody></table></div>`;
+pegar('fin-proximos').before(blocoLembretes);
+
+/* ---------- recibo de pagamento ---------- */
+/* Número do recibo: ano-mês-6 primeiros caracteres do código da mensalidade (único e fixo) */
+const numeroRecibo = m => `${m.ano}-${String(m.mes).padStart(2, '0')}-${String(m.id).replace(/-/g, '').slice(0, 6).toUpperCase()}`;
+const formaFrase = f => f === 'pix' ? 'via Pix' : 'em dinheiro';
+/* Valor por extenso em reais (ex.: 384 → "trezentos e oitenta e quatro reais") */
+function porExtenso(valor) {
+  const un = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const dez = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const cen = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+  const ate999 = n => {
+    if (n === 0) return '';
+    if (n === 100) return 'cem';
+    const c = Math.floor(n / 100), r = n % 100, partes = [];
+    if (c) partes.push(cen[c]);
+    if (r) partes.push(r < 20 ? un[r] : dez[Math.floor(r / 10)] + (r % 10 ? ' e ' + un[r % 10] : ''));
+    return partes.join(' e ');
+  };
+  const total = Math.round(Number(valor) * 100), inteiro = Math.floor(total / 100), cent = total % 100;
+  const mil = Math.floor(inteiro / 1000), resto = inteiro % 1000;
+  let reais = '';
+  if (mil) reais = mil === 1 ? 'mil' : ate999(mil) + ' mil';
+  if (resto) reais += (reais ? ((resto < 100 || resto % 100 === 0) ? ' e ' : ' ') : '') + ate999(resto);
+  const partes = [];
+  if (inteiro) partes.push(reais + (inteiro === 1 ? ' real' : ' reais'));
+  if (cent) partes.push(ate999(cent) + (cent === 1 ? ' centavo' : ' centavos'));
+  return partes.join(' e ') || 'zero reais';
+}
+function mensagemRecibo(c, m) {
+  return `Olá, ${primeiroNome(c.responsavel.nome)}! Recebemos o pagamento da mensalidade de ${nomeMesAno(m)} do transporte escolar de ${c.crianca.nome}: ${fmtBRL(m.valor)}, pago em ${fmtDia(m.pago_em)} ${formaFrase(m.forma_pagamento)}. Recibo nº ${numeroRecibo(m)}. Obrigado!`;
+}
+function imprimirRecibo(c, m) {
+  const w = window.open('', '_blank'); if (!w) { toast('O navegador bloqueou a janela. Permita pop-ups para imprimir.'); return; }
+  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Recibo ${numeroRecibo(m)}</title><style>body{font-family:Arial,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;color:#111;font-size:14px;line-height:1.7}.caixa{border:1.5px solid #333;border-radius:8px;padding:28px 30px}h1{font-size:18px;margin:0 0 4px;letter-spacing:.04em}.valor{font-size:20px;font-weight:bold;margin:0 0 18px}p{margin:0 0 14px}.rodape{margin-top:28px;border-top:1px solid #ccc;padding-top:12px;font-size:12.5px;color:#444}.dica{font-size:12px;color:#666;margin-bottom:16px}@media print{.dica{display:none}}</style></head><body><p class="dica">Use Ctrl+P e escolha "Salvar como PDF".</p><div class="caixa"><h1>RECIBO Nº ${numeroRecibo(m)}</h1><p class="valor">${fmtBRL(m.valor)}</p><p>Recebemos de <b>${esc(c.responsavel.nome)}</b>, CPF ${fmtCPF(c.responsavel.cpf)}, a importância de <b>${fmtBRL(m.valor)} (${porExtenso(m.valor)})</b>, referente à mensalidade de <b>${esc(nomeMesAno(m))}</b> do serviço de transporte escolar de <b>${esc(c.crianca.nome)}</b>, paga em <b>${fmtDia(m.pago_em)}</b> ${formaFrase(m.forma_pagamento)}.</p><div class="rodape">Van Escolar Tia Patrícia e Tio Vitor<br>${m.pago_por_nome ? 'Registrado por: ' + esc(m.pago_por_nome) + ' · ' : ''}Emitido em ${fmtDia(hojeISO())}</div></div><script>setTimeout(function(){window.print()},300)<\/script></body></html>`);
+  w.document.close();
 }
 
 function renderFinanceiro() {
@@ -407,6 +529,19 @@ function renderFinanceiro() {
   pegar('fin-aberto').textContent = fmtBRL(aberto);
   pegar('fin-atrasados').textContent = atrasadas.length;
   pegar('fin-atrasados-valor').textContent = fmtBRL(valorAtraso);
+
+  /* Lembretes de hoje (pendentes primeiro, depois os já lembrados) */
+  const lemb = lembretesJanela().sort((a, b) => (!!a.m.lembrete_em - !!b.m.lembrete_em) || (vencDe(a.m) - vencDe(b.m)));
+  const pendentes = lemb.filter(({ m }) => !m.lembrete_em).length;
+  pegar('fin-bloco-lembretes').hidden = !lemb.length;
+  pegar('fin-lembretes-qtd').textContent = lemb.length ? (pendentes ? `(${pendentes} para enviar)` : '(todos lembrados)') : '';
+  pegar('tab-lembretes').innerHTML = lemb.map(({ c, m }) => {
+    const d = diasAte(m), quando = d === 0 ? 'hoje' : d === 1 ? 'amanhã' : `em ${d} dias`;
+    const acao = m.lembrete_em
+      ? `<span class="tag aberto">Lembrado ${fmtData(m.lembrete_em)}${m.lembrete_por_nome ? ' por ' + esc(m.lembrete_por_nome) : ''}</span> <button class="btn ghost sm" data-lembrar="${m.id}" type="button">Lembrar de novo</button>`
+      : `<button class="btn or sm" data-lembrar="${m.id}" type="button">Lembrar no WhatsApp</button>`;
+    return `<tr><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}</td><td>${esc(nomeMesAno(m))}</td><td>${fmtBRL(m.valor)}</td><td>${quando}<small>${fmtDia(m.vencimento)}</small></td><td>${acao}</td></tr>`;
+  }).join('');
 
   /* Próximos vencimentos */
   const avisoProx = pegar('fin-proximos');
@@ -454,11 +589,21 @@ pegar('tab-atrasos').addEventListener('click', e => {
   if (b.dataset.pag) abrirPagamento(b.dataset.pag);
   if (b.dataset.cobrar) { const x = acharMens(b.dataset.cobrar); if (x) abrirConversa(x.c.responsavel.tel, mensagemCobranca(x.c, x.m)); }
 });
+pegar('tab-lembretes').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-lembrar]'); if (!b) return;
+  const x = acharMens(b.dataset.lembrar); if (!x) return;
+  if (!abrirConversa(x.c.responsavel.tel, mensagemLembrete(x.c, x.m))) return; /* sem WhatsApp válido, não marca */
+  b.disabled = true;
+  const { error } = await sb.from('mensalidades').update({ lembrete_em: agora() }).eq('id', x.m.id);
+  if (error) { b.disabled = false; toast('O WhatsApp abriu, mas não consegui marcar como lembrado: ' + traduzErro(error)); return; }
+  await recarregar(); renderFinanceiro();
+  toast('Marcado como lembrado.');
+});
 document.querySelectorAll('.chip[data-ff]').forEach(ch => ch.addEventListener('click', () => { finFiltro = ch.dataset.ff; document.querySelectorAll('.chip[data-ff]').forEach(x => x.classList.toggle('on', x === ch)); renderFinanceiro(); }));
 pegar('fin-busca').addEventListener('input', e => { finBusca = e.target.value; renderFinanceiro(); });
 pegar('fin-exportar').addEventListener('click', () => {
-  const cab = ['Responsável', 'CPF', 'Criança', 'Turma', 'Mês', 'Vencimento', 'Valor', 'Situação', 'Pago em', 'Forma', 'Registrado por'];
-  const linhas = todasMensalidades().map(({ c, m }) => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.crianca.nome, c.turma, nomeMesAno(m), fmtDia(m.vencimento), Number(m.valor).toFixed(2).replace('.', ','), m.pago ? 'Pago' : estaAtrasada(m) ? 'Atrasado' : 'A vencer', m.pago ? fmtDia(m.pago_em) : '', m.pago ? nomeForma(m.forma_pagamento) : '', m.pago_por_nome || '']);
+  const cab = ['Responsável', 'CPF', 'Criança', 'Turma', 'Mês', 'Vencimento', 'Valor', 'Situação', 'Pago em', 'Forma', 'Registrado por', 'Recibo'];
+  const linhas = todasMensalidades().map(({ c, m }) => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.crianca.nome, c.turma, nomeMesAno(m), fmtDia(m.vencimento), Number(m.valor).toFixed(2).replace('.', ','), m.pago ? 'Pago' : estaAtrasada(m) ? 'Atrasado' : 'A vencer', m.pago ? fmtDia(m.pago_em) : '', m.pago ? nomeForma(m.forma_pagamento) : '', m.pago_por_nome || '', m.pago ? numeroRecibo(m) : '']);
   baixarCSV('financeiro-2027.csv', cab, linhas);
 });
 
@@ -472,6 +617,16 @@ addEventListener('keydown', e => { if (e.key === 'Escape') fecharModais(); });
 /* Registrar / desfazer pagamento */
 const formPag = pegar('form-pag');
 let pagAtual = null;
+/* Botões do recibo, criados dentro da janela, na área de "já pago" */
+const areaPago = pegar('pag-pago').querySelector('.facts');
+const bReciboImp = document.createElement('button');
+bReciboImp.className = 'btn ghost sm'; bReciboImp.type = 'button'; bReciboImp.textContent = 'Imprimir recibo';
+const bReciboWa = document.createElement('button');
+bReciboWa.className = 'btn or sm'; bReciboWa.type = 'button'; bReciboWa.textContent = 'Enviar recibo no WhatsApp';
+areaPago.prepend(bReciboImp); areaPago.prepend(bReciboWa);
+bReciboWa.addEventListener('click', () => { const x = pagAtual && acharMens(pagAtual.m.id); if (x && x.m.pago) abrirConversa(x.c.responsavel.tel, mensagemRecibo(x.c, x.m)); });
+bReciboImp.addEventListener('click', () => { const x = pagAtual && acharMens(pagAtual.m.id); if (x && x.m.pago) imprimirRecibo(x.c, x.m); });
+
 function abrirPagamento(mid) {
   const x = acharMens(mid); if (!x) return; pagAtual = x;
   const { c, m } = x;
@@ -479,7 +634,7 @@ function abrirPagamento(mid) {
   pegar('pag-sub').textContent = c.responsavel.nome + ' · ' + c.crianca.nome;
   let info = `<b>${esc(nomeMesAno(m))}</b> · ${fmtBRL(m.valor)} · vencimento ${fmtDia(m.vencimento)}`;
   if (m.mes === 1 && c.vale) info += '<br>Já com o desconto de 20% do vale PV.';
-  if (m.pago) info += `<br>Pago em ${fmtDia(m.pago_em)} · ${nomeForma(m.forma_pagamento)}${m.pago_por_nome ? ' · registrado por ' + esc(m.pago_por_nome) : ''}`;
+  if (m.pago) info += `<br>Pago em ${fmtDia(m.pago_em)} · ${nomeForma(m.forma_pagamento)}${m.pago_por_nome ? ' · registrado por ' + esc(m.pago_por_nome) : ''}<br>Recibo nº ${numeroRecibo(m)}`;
   else if (estaAtrasada(m)) info += `<br><span style="color:var(--red)">Atrasada há ${diasAtraso(m)} dia(s).</span>`;
   pegar('pag-info').innerHTML = info;
   formPag.reset(); formPag.elements.data.value = hojeISO(); formPag.elements.data.max = hojeISO();
@@ -494,11 +649,14 @@ formPag.addEventListener('submit', async e => {
   if (!data) { erro.textContent = 'Informe a data do pagamento.'; return; }
   if (data > hojeISO()) { erro.textContent = 'A data do pagamento não pode ser no futuro.'; return; }
   const b = pegar('pag-confirmar'); b.disabled = true;
-  const { data: res, error } = await sb.from('mensalidades').update({ pago: true, forma_pagamento: forma, pago_em: data }).eq('id', pagAtual.m.id).eq('pago', false).select('id');
+  const mid = pagAtual.m.id;
+  const { data: res, error } = await sb.from('mensalidades').update({ pago: true, forma_pagamento: forma, pago_em: data }).eq('id', mid).eq('pago', false).select('id');
   b.disabled = false;
   if (error) { erro.textContent = traduzErro(error); return; }
-  fecharModais(); await recarregar(); renderFinanceiro();
-  toast(res.length ? 'Pagamento registrado.' : 'Este mês já tinha sido marcado como pago em outro aparelho. A tela foi atualizada.');
+  await recarregar(); renderFinanceiro();
+  if (!res.length) { fecharModais(); toast('Este mês já tinha sido marcado como pago em outro aparelho. A tela foi atualizada.'); return; }
+  abrirPagamento(mid); /* reabre já no modo "pago", com os botões do recibo */
+  toast('Pagamento registrado. Se quiser, envie ou imprima o recibo.');
 });
 pegar('pag-desfazer').addEventListener('click', async () => {
   if (!pagAtual || !confirm('Desfazer este pagamento? O mês volta a ficar em aberto.')) return;
@@ -590,8 +748,15 @@ async function iniciar() {
     usuario = data.session ? data.session.user : null;
     sb.auth.onAuthStateChange((evento, sessao) => {
       if (evento === 'SIGNED_OUT') { limparEstado(); setTimeout(rota, 0); }
+      else if (evento === 'PASSWORD_RECOVERY' && sessao) { usuario = sessao.user; setTimeout(() => irPara('#nova-senha'), 0); }
       else if (sessao) usuario = sessao.user;
     });
+    /* Chegou pelo link do e-mail: vai direto para "Criar nova senha" */
+    if (VEIO_RECUPERACAO && usuario) history.replaceState(null, '', location.pathname + '#nova-senha');
+    else if (ERRO_LINK) {
+      history.replaceState(null, '', location.pathname + '#login');
+      erroLogin('O link para criar nova senha expirou ou já foi usado. Peça um novo em "Esqueci minha senha".');
+    }
   }
   rota();
 }
