@@ -1,6 +1,6 @@
 /* =================== VAN PV · painel conectado ao banco (Supabase) ===================
    Os dados ficam no banco. O navegador guarda só a sessão de login.
-   A assinatura online (etapa 6) ainda não está ativa: o link mostra um aviso. */
+   A assinatura online usa a Edge Function "assinatura" no Supabase. */
 const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = true;
 const SERIES = ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'];
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -29,9 +29,15 @@ function traduzErro(e) {
   return m;
 }
 const linkAssinatura = c => location.href.split('#')[0] + '#assinar/' + c.token;
+function mensagemWhatsApp(c) {
+  const nome = (c.responsavel.nome || '').trim().split(' ')[0];
+  return `Olá, ${nome}! Segue o link para assinar o contrato de transporte escolar 2027 de ${c.crianca.nome}:\n\n${linkAssinatura(c)}\n\n` +
+    `Na página, clique em "Receber código por e-mail". O código chega em ${c.responsavel.email} e vale por 15 minutos.\n` +
+    `Se não aparecer na caixa de entrada, confira a pasta de lixo eletrônico (spam).`;
+}
 async function copiar(t) {
-  const aviso = ASSINATURA_ATIVA ? 'Link copiado. Cole no WhatsApp do responsável.' : 'Link copiado. Atenção: a assinatura online ainda não está ativa.';
-  try { await navigator.clipboard.writeText(t); toast(aviso); } catch (e) { prompt('Copie o link:', t); }
+  const aviso = 'Mensagem copiada. Cole no WhatsApp do responsável.';
+  try { await navigator.clipboard.writeText(t); toast(aviso); } catch (e) { prompt('Copie a mensagem:', t); }
 }
 function irPara(h) { if (location.hash === h) rota(); else location.hash = h; }
 
@@ -142,13 +148,13 @@ function renderContratos() {
   document.getElementById('st-vagas').textContent = 'M ' + (LUGARES - ocup('Manhã')) + ' · T ' + (LUGARES - ocup('Tarde'));
   const b = busca.toLowerCase();
   const lista = cs.filter(c => (filtro === 'todos' || c.status === filtro) && (!b || (c.responsavel.nome + ' ' + c.crianca.nome + ' ' + c.bairro).toLowerCase().includes(b)));
-  const acao = c => c.status === 'aguardando' ? `<button class="btn ghost sm" data-copiar="${c.id}" type="button">Copiar link</button>` : c.status === 'assinado' ? `<button class="btn ghost sm" data-pdf="${c.id}" type="button">PDF</button>` : c.status === 'rascunho' ? `<button class="btn ghost sm" data-editar="${c.id}" type="button">Editar</button>` : '';
+  const acao = c => c.status === 'aguardando' ? `<button class="btn ghost sm" data-copiar="${c.id}" type="button">Copiar mensagem</button>` : c.status === 'assinado' ? `<button class="btn ghost sm" data-pdf="${c.id}" type="button">PDF</button>` : c.status === 'rascunho' ? `<button class="btn ghost sm" data-editar="${c.id}" type="button">Editar</button>` : '';
   const vazio = cs.length ? 'Nenhum contrato aqui.' : 'Nenhum contrato ainda. Clique em "+ Novo contrato" para começar.';
   document.getElementById('tab-contratos').innerHTML = lista.length ? lista.map(c => `<tr class="clicavel" data-id="${c.id}"><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}<small>${esc(c.crianca.serie)}</small></td><td>${esc(c.turma)}</td><td>${fmtBRL(c.mensalidade)}</td><td><span class="tag ${c.status}">${rotulo(c)}</span></td><td>${acao(c)}</td></tr>`).join('') : `<tr><td colspan="6" class="vazio">${vazio}</td></tr>`;
 }
 document.getElementById('tab-contratos').addEventListener('click', e => {
   const b = e.target.closest('button');
-  if (b) { e.stopPropagation(); if (b.dataset.copiar) copiar(linkAssinatura(achar(b.dataset.copiar))); if (b.dataset.pdf) abrirPDF(achar(b.dataset.pdf)); if (b.dataset.editar) irPara('#novo/' + b.dataset.editar); return; }
+  if (b) { e.stopPropagation(); if (b.dataset.copiar) copiar(mensagemWhatsApp(achar(b.dataset.copiar))); if (b.dataset.pdf) abrirPDF(achar(b.dataset.pdf)); if (b.dataset.editar) irPara('#novo/' + b.dataset.editar); return; }
   const tr = e.target.closest('tr[data-id]'); if (tr) irPara('#contrato/' + tr.dataset.id);
 });
 document.querySelectorAll('.chip[data-f]').forEach(ch => ch.addEventListener('click', () => { filtro = ch.dataset.f; document.querySelectorAll('.chip[data-f]').forEach(x => x.classList.toggle('on', x === ch)); renderContratos(); }));
@@ -199,7 +205,7 @@ async function gravar(status) {
   if (error) { erroEl.textContent = traduzErro(error); return; }
   await recarregar();
   irPara('#contrato/' + data);
-  toast(status === 'aguardando' ? (ASSINATURA_ATIVA ? 'Contrato gerado. Copie o link e envie no WhatsApp.' : 'Contrato gerado. A assinatura online ainda não está ativa.') : 'Rascunho salvo.');
+  toast(status === 'aguardando' ? 'Contrato gerado. Copie a mensagem e envie no WhatsApp.' : 'Rascunho salvo.');
 }
 formC.addEventListener('submit', e => { e.preventDefault(); gravar('aguardando'); });
 document.getElementById('salvar-rascunho').addEventListener('click', () => gravar('rascunho'));
@@ -234,10 +240,10 @@ document.getElementById('det-gerar').addEventListener('click', async e => {
   const b = e.currentTarget; b.disabled = true;
   const ok = await atualizarContrato(atual.id, { status: 'aguardando', enviado_em: atual.enviadoEm || agora() }, ['rascunho']);
   b.disabled = false; telaDetalhe(atual.id);
-  if (ok) toast(ASSINATURA_ATIVA ? 'Link gerado. Copie e envie no WhatsApp.' : 'Link gerado. A assinatura online ainda não está ativa.');
+  if (ok) toast('Link gerado. Copie a mensagem e envie no WhatsApp.');
 });
 document.getElementById('det-editar').addEventListener('click', () => irPara('#novo/' + atual.id));
-document.getElementById('det-copiar').addEventListener('click', () => copiar(linkAssinatura(atual)));
+document.getElementById('det-copiar').addEventListener('click', () => copiar(mensagemWhatsApp(atual)));
 document.getElementById('det-pdf').addEventListener('click', () => abrirPDF(atual));
 document.getElementById('det-cancelar').addEventListener('click', async () => {
   if (!confirm('Cancelar este contrato?')) return;
@@ -246,7 +252,7 @@ document.getElementById('det-cancelar').addEventListener('click', async () => {
   if (ok) toast('Contrato cancelado.');
 });
 
-/* ---------- PDF: abre uma página pronta para "Salvar como PDF" ---------- */
+/* ---------- PDF: assinado vem do servidor; os outros abrem para "Salvar como PDF" ---------- */
 async function baixarPDFAssinado(c) {
   const w = window.open('', '_blank'); if (!w) { toast('O navegador bloqueou a janela. Permita pop-ups para baixar o PDF.'); return; }
   w.document.write('<p style="font-family:sans-serif;padding:20px">Abrindo o PDF assinado…</p>');
@@ -263,7 +269,6 @@ function abrirPDF(c) {
   w.document.close();
 }
 
-/* ---------- tela do responsável: aviso até a etapa 6 ---------- */
 /* ---------- tela do responsável: assinatura de verdade (Edge Function) ---------- */
 const FN_URL = (CFG.supabaseUrl || '') + '/functions/v1/assinatura';
 const elA = id => document.getElementById(id);
@@ -280,7 +285,7 @@ async function chamarAssinatura(dados) {
   try {
     const r = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) return { erro: j.erro || 'Não foi possível concluir. Tente de novo.' };
+    if (!r.ok) return { erro: j.erro || 'Não foi possível concluir (erro ' + r.status + '). Tente de novo.' };
     return j;
   } catch (e) { return { erro: 'Sem conexão. Confira a internet e tente de novo.' }; }
 }
@@ -343,7 +348,7 @@ function renderFinanceiro() {
       const venc = m ? new Date(m.vencimento + 'T12:00:00') : new Date(ANO, i, c.vencimento), atr = !pago && venc < hoje;
       if (pago) { recebido += valor; pagos++; } else aberto += valor;
       if (atr) atrasados++;
-      return `<td><button class="mes ${pago ? 'pago' : atr ? 'atrasado' : ''}" data-id="${c.id}" data-m="${i + 1}" title="${nomeMes}${m ? '' : ' · mensalidade ainda não criada'}" type="button"${m ? '' : ' disabled'}>✓</button></td>`;
+      return `<td><button class="mes ${pago ? 'pago' : atr ? 'atrasado' : ''}" data-id="${c.id}" data-m="${i + 1}" title="${nomeMes}${m ? ' · ' + fmtBRL(valor) : ' · mensalidade ainda não criada'}" type="button"${m ? '' : ' disabled'}>✓</button></td>`;
     }).join('');
     return `<tr><td>${esc(c.responsavel.nome)}<small>${esc(c.crianca.nome)} · ${esc(c.turma)} · ${fmtBRL(c.mensalidade)}</small></td>${cels}<td><b>${pagos}/12</b></td></tr>`;
   });
