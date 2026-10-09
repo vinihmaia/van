@@ -1,196 +1,316 @@
-/* =================== CONFIGURAÇÃO (edite aqui) =================== */
-const CONFIG = {
-  patricia: { nome: 'Tia Patrícia', tel: '+55 11 99692-9358', wa: '5511996929358' }, // CONFIRA
-  vitor:    { nome: 'Tio Vitor',    tel: '+55 11 98406-1754', wa: '5511984061754' }, // CONFIRA
-  msg:     'Oi! Vi o site da van e quero saber sobre vagas para 2027.',
-  msgVale: 'Oi! Quero me matricular na van para a turma de 2027 e usar o vale desconto PV: 20% na primeira mensalidade (válido até 15/01/2027). Segue o cartão.',
-  msgVaga: 'Oi! Quero uma vaga na van para 2027. Seguem meus dados:',
-  series: ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'],
-  paradas: [
-    { nome: 'Terminal Fátima',   lat: -23.5547, lng: -46.9056 }, // Terminal N. Sra. de Fátima, Jandira
-    { nome: 'Parque Viana',      lat: -23.5399, lng: -46.8701 }, // Barueri
-    { nome: 'Jardim Tupanci',    lat: -23.4945, lng: -46.8701 }, // Barueri
-    { nome: 'Engenho Novo',      lat: -23.4892, lng: -46.8897 }, // Barueri
-    { nome: 'Fundação Bradesco', lat: -23.5456, lng: -46.7716 }, // Osasco (conferido no Google Maps)
-  ],
-};
+/* =================== VAN PV · painel conectado ao banco (Supabase) ===================
+   Os dados ficam no banco. O navegador guarda só a sessão de login.
+   A assinatura online (etapa 6) ainda não está ativa: o link mostra um aviso. */
+const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = false;
+const SERIES = ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'];
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-document.querySelectorAll('[data-wa]').forEach(a => {
-  const c = CONFIG[a.dataset.wa];
-  const m = a.dataset.msg === 'vale' ? CONFIG.msgVale : CONFIG.msg;
-  a.href = `https://wa.me/${c.wa}?text=${encodeURIComponent(m)}`;
-});
-document.querySelectorAll('[data-tel]').forEach(s => { s.textContent = CONFIG[s.dataset.tel].tel; });
-document.getElementById('ano').textContent = new Date().getFullYear();
-/* =================== FOLHINHA (mês de hoje → janeiro de 2027) =================== */
-const fol = document.getElementById('fol');
-if (fol) {
-  const hoje = new Date(), meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-  document.getElementById('fol-mes').textContent = meses[hoje.getMonth()];
-  document.getElementById('fol-ano').textContent = hoje.getFullYear();
-  if (hoje >= new Date(2027, 0, 1)) { fol.classList.add('parada'); fol.querySelector('.pg-jan small').textContent = 'a turma começou'; }
+/* ---------- conexão com o banco ---------- */
+const CFG = window.VAN_CONFIG || {};
+const sb = (window.supabase && CFG.supabaseUrl && CFG.supabaseKey) ? window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey) : null;
+const CAMPOS = '*, responsavel:responsaveis!responsavel_id(*), crianca:criancas!crianca_id(*), assinatura:assinaturas(*), mensalidades(*)';
+
+/* ---------- ajudantes ---------- */
+const agora = () => new Date().toISOString();
+const hojeISO = () => new Date().toLocaleDateString('sv-SE');
+const soDigitos = s => (s || '').replace(/\D/g, '');
+const fmtCPF = d => { d = soDigitos(d); return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : d; };
+const fmtBRL = n => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtData = (iso, hora) => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString('pt-BR') + (hora ? ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''); };
+const fmtDia = s => s ? s.split('-').reverse().join('/') : '—';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let tt; function toast(m) { const el = document.getElementById('toast'); el.textContent = m; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 3200); }
+function erroLogin(m) { document.getElementById('erro-login').textContent = m || ''; }
+function traduzErro(e) {
+  const m = (e && (e.message || String(e))) || 'Erro desconhecido.';
+  if (/failed to fetch|networkerror|network request/i.test(m)) return 'Sem conexão com o banco. Confira a internet e tente de novo.';
+  if (/jwt|token.*expired/i.test(m)) return 'Sua sessão expirou. Saia e entre de novo.';
+  if (/permission denied|row-level security/i.test(m)) return 'Sem permissão para esta ação.';
+  return m;
+}
+const linkAssinatura = c => location.href.split('#')[0] + '#assinar/' + c.token;
+async function copiar(t) {
+  const aviso = ASSINATURA_ATIVA ? 'Link copiado. Cole no WhatsApp do responsável.' : 'Link copiado. Atenção: a assinatura online ainda não está ativa.';
+  try { await navigator.clipboard.writeText(t); toast(aviso); } catch (e) { prompt('Copie o link:', t); }
+}
+function irPara(h) { if (location.hash === h) rota(); else location.hash = h; }
+
+/* ---------- estado (o que está carregado na tela) ---------- */
+let DB = { contratos: [] }, usuario = null, acessoOk = false, carregado = false;
+const achar = id => DB.contratos.find(c => c.id === id);
+function limparEstado() { DB.contratos = []; usuario = null; acessoOk = false; carregado = false; }
+
+/* Converte uma linha do banco no formato que as telas usam */
+function deBanco(r) {
+  const a = Array.isArray(r.assinatura) ? r.assinatura[0] : r.assinatura;
+  const resp = r.responsavel || {}, cri = r.crianca || {}, mens = {};
+  (r.mensalidades || []).forEach(m => { if (m.ano === ANO) mens[m.mes] = m; });
+  return {
+    id: r.id, token: r.token, status: r.status, criadoEm: r.criado_em, enviadoEm: r.enviado_em,
+    responsavel: { nome: resp.nome || '', cpf: resp.cpf || '', tel: resp.telefone || '', email: resp.email || '' },
+    crianca: { nome: cri.nome || '', serie: cri.serie || '' },
+    turma: r.turma, endereco: r.endereco || '', bairro: r.bairro || '', mensalidade: Number(r.mensalidade),
+    vencimento: r.vencimento, inicio: r.inicio, fim: r.fim, vale: r.vale_desconto, obs: r.observacoes || '',
+    assinatura: a ? { nome: a.nome, cpf: a.cpf, em: a.assinado_em, ip: a.ip || '—', hash: a.hash_documento } : null,
+    mensalidades: mens
+  };
+}
+async function recarregar() {
+  const { data, error } = await sb.from('contratos').select(CAMPOS).order('criado_em', { ascending: false });
+  if (error) { toast('Erro ao carregar: ' + traduzErro(error)); return false; }
+  DB.contratos = data.map(deBanco); carregado = true; return true;
 }
 
-/* =================== BARRA FIXA E MENU DO CELULAR =================== */
-const nav = document.getElementById('nav'), hero = document.getElementById('top'), burger = document.getElementById('burger');
-const navScroll = () => nav.classList.toggle('on', scrollY > hero.offsetHeight - 80);
-addEventListener('scroll', navScroll, { passive: true }); navScroll();
-function menu(on) {
-  document.body.classList.toggle('menu-on', on);
-  document.querySelectorAll('[data-menu]').forEach(b => b.setAttribute('aria-expanded', on));
-  burger.textContent = on ? 'Fechar' : 'Menu';
+/* ---------- texto do contrato (MODELO DE DEMONSTRAÇÃO) ---------- */
+function textoContrato(c, html) {
+  const v = s => html ? '<strong>' + esc(s) + '</strong>' : String(s);
+  const linhas = [
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇO DE TRANSPORTE ESCOLAR · TURMA 2027',
+    '(modelo de demonstração: as cláusulas definitivas serão definidas com a Tia Patrícia)', '',
+    'CONTRATADA: Van Escolar Tia Patrícia e Tio Vitor.',
+    'CONTRATANTE: ' + v(c.responsavel.nome) + ', CPF ' + v(fmtCPF(c.responsavel.cpf)) + ', telefone ' + v(c.responsavel.tel) + ', e-mail ' + v(c.responsavel.email) + '.',
+    'ALUNO(A): ' + v(c.crianca.nome) + ', ' + v(c.crianca.serie) + ', turma da ' + v(c.turma.toLowerCase()) + '.',
+    'ENDEREÇO DE EMBARQUE: ' + v(c.endereco) + ', ' + v(c.bairro) + '.', '',
+    '1. OBJETO. Transporte do(a) aluno(a) entre o endereço acima e a Fundação Bradesco (Cidade de Deus, Osasco), ida e volta, nos dias letivos.',
+    '2. VIGÊNCIA. De ' + v(fmtDia(c.inicio)) + ' a ' + v(fmtDia(c.fim)) + '.',
+    '3. MENSALIDADE. ' + v(fmtBRL(c.mensalidade)) + ' por mês, com vencimento todo dia ' + v(c.vencimento) + ', em dinheiro ou Pix, durante 12 meses, inclusive janeiro e fevereiro.',
+    c.vale ? '3.1. VALE DESCONTO PV. Na primeira mensalidade será aplicado desconto de 20%.' : null,
+    '4. FALTAS. O responsável avisa pelo WhatsApp com antecedência, inclusive em caso de atestado médico.',
+    '5. RESCISÃO. [a definir com a Tia Patrícia]',
+    '6. OUTRAS CONDIÇÕES. ' + v(c.obs || '—'), '',
+    'Ao assinar eletronicamente, o CONTRATANTE declara que leu e concorda com todas as cláusulas acima.'
+  ].filter(l => l !== null);
+  return linhas.join('\n');
 }
-document.querySelectorAll('[data-menu]').forEach(b => b.addEventListener('click', () => menu(!document.body.classList.contains('menu-on'))));
-document.getElementById('sheet-bg').addEventListener('click', () => menu(false));
-document.querySelectorAll('#menu a').forEach(a => a.addEventListener('click', () => menu(false)));
-addEventListener('keydown', e => { if (e.key === 'Escape') menu(false); });
 
-/* =================== MAPA (cinza escuro + rota real) =================== */
-async function iniciarMapa() {
-  const P = CONFIG.paradas, badge = document.getElementById('kmbadge');
-  const map = L.map('mapa', { scrollWheelZoom: false, dragging: !L.Browser.mobile });
-  const escuro = L.layerGroup([
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Esri, HERE, Garmin, © OpenStreetMap' }),
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 })
-  ]);
-  const sat = L.layerGroup([
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagens © Esri, Maxar, Earthstar Geographics' }),
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
-  ]);
-  escuro.addTo(map);
-  L.control.layers({ 'Mapa escuro': escuro, 'Satélite': sat }).addTo(map);
-
-  let coords = P.map(p => [p.lat, p.lng]);
-  try {
-    const url = `https://router.project-osrm.org/route/v1/driving/${P.map(p => p.lng + ',' + p.lat).join(';')}?overview=full&geometries=geojson`;
-    const j = await (await fetch(url)).json();
-    if (j.code === 'Ok') {
-      const rt = j.routes[0];
-      coords = rt.geometry.coordinates.map(c => [c[1], c[0]]);
-      badge.textContent = `≈ ${(rt.distance / 1000).toFixed(1).replace('.', ',')} km · ${Math.round(rt.duration / 60)} min`;
-    } else badge.remove();
-  } catch (e) { badge.remove(); }
-
-  L.polyline(coords, { color: '#F4845F', weight: 18, opacity: .12, interactive: false }).addTo(map);
-  L.polyline(coords, { color: '#F4845F', weight: 10, opacity: .25, interactive: false }).addTo(map);
-  const linha = L.polyline(coords, { color: '#F4845F', weight: 4, opacity: 1, interactive: false }).addTo(map);
-  L.polyline(coords, { color: '#FFE4D6', weight: 2, opacity: .9, dashArray: '2 12', className: 'rota-fluxo', interactive: false }).addTo(map);
-  map.fitBounds(linha.getBounds(), { padding: [50, 50] });
-  P.forEach((p, i) => L.marker([p.lat, p.lng], { keyboard: false, icon: L.divIcon({ className: '', html: `<span class="parada">${i + 1}</span>`, iconSize: [26, 26], iconAnchor: [13, 13] }) }).bindTooltip(p.nome, { permanent: true, direction: 'top', offset: [0, -16], className: 'etq' }).addTo(map));
-}
-iniciarMapa();
-
-/* =================== VALE DESCONTO (caixa + cartão que gira com a rolagem) =================== */
-const vale = document.getElementById('vale'), scene = document.getElementById('scene'), card = document.getElementById('card');
-let live = false, hover = false, timer = null, spin = 0, mrx = 0, mry = 0, mmy = 50; const tv0 = performance.now();
-function tilt(rx, ry, mx, my) { card.style.setProperty('--rx', rx.toFixed(2) + 'deg'); card.style.setProperty('--ry', ry.toFixed(2) + 'deg'); card.style.setProperty('--mx', mx.toFixed(1) + '%'); card.style.setProperty('--my', my.toFixed(1) + '%'); }
-function abrir() { if (vale.classList.contains('open')) return; vale.classList.add('open'); if (reduce) return; clearTimeout(timer); timer = setTimeout(() => { spin = 0; live = true; vale.classList.add('live'); }, 2500); }
-function fechar() { clearTimeout(timer); live = false; hover = false; spin = 0; vale.classList.remove('live'); tilt(0, 0, 50, 50); vale.classList.remove('open'); }
-scene.addEventListener('click', () => vale.classList.contains('open') ? fechar() : abrir());
-scene.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scene.click(); } });
-scene.addEventListener('mousemove', e => { if (!live) return; hover = true; const r = scene.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; mrx = -y * 24; mry = x * 36; mmy = 50 + y * 70; });
-scene.addEventListener('mouseleave', () => { hover = false; });
-(function loop(now) {
-  if (live) {
-    const r = vale.getBoundingClientRect(), wh = innerHeight;
-    const p = Math.min(1, Math.max(0, (wh - r.top) / (wh + r.height))); // 0 = entrando por baixo, .5 = centro da tela, 1 = saindo por cima
-    const alvo = (p - .5) * 2 * 180;                                     // -180° … 0° (de frente) … +180°
-    spin += (alvo - spin) * .1;                                          // suaviza o giro
-    const t = (now - tv0) / 1000;
-    const rx = (hover ? mrx : Math.sin(t * .9) * 4) + (p - .5) * -16;
-    const ry = spin + (hover ? mry : Math.sin(t * .55) * 8);
-    const luz = Math.sin(ry * Math.PI / 180);                            // a luz fica parada, o cartão gira
-    tilt(rx, ry, 50 - luz * 40, hover ? mmy : 50 - Math.sin(t * .9) * 20);
+/* ---------- navegação por #rota ---------- */
+function mostrar(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function carregando() { document.getElementById('tab-contratos').innerHTML = '<tr><td colspan="6" class="vazio">Carregando…</td></tr>'; }
+async function rota() {
+  const h = location.hash.slice(1) || 'contratos', [tela, param] = h.split('/');
+  if (tela === 'assinar') { mostrar('tela-assinar'); telaAssinar(param); window.scrollTo(0, 0); return; }
+  if (!sb) { mostrar('tela-login'); erroLogin('Não foi possível carregar a conexão com o banco. Confira a internet e o arquivo config.js.'); document.getElementById('login-btn').disabled = true; return; }
+  if (!usuario) { mostrar('tela-login'); return; }
+  if (!acessoOk) {
+    const { data, error } = await sb.from('usuarios_painel').select('id').eq('id', usuario.id).maybeSingle();
+    if (error) { mostrar('tela-login'); erroLogin(traduzErro(error)); return; }
+    if (!data) { await sb.auth.signOut(); limparEstado(); mostrar('tela-login'); erroLogin('Este login não tem acesso ao painel.'); return; }
+    acessoOk = true;
   }
-  requestAnimationFrame(loop);
-})(performance.now());
-const io = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { vale.classList.add('in'); setTimeout(abrir, reduce ? 0 : 1100); io.disconnect(); } }); }, { threshold: .35 });
-io.observe(vale);
+  mostrar('app');
+  document.getElementById('quem-email').textContent = usuario.email;
+  const grupo = (tela === 'novo' || tela === 'contrato') ? 'contratos' : tela;
+  document.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === grupo));
+  const mapa = { contratos: 'tela-contratos', novo: 'tela-novo', contrato: 'tela-detalhe', financeiro: 'tela-financeiro', responsaveis: 'tela-responsaveis' };
+  const alvo = mapa[tela] || 'tela-contratos';
+  document.querySelectorAll('#app .screen').forEach(s => s.classList.toggle('active', s.id === alvo));
+  const listas = ['tela-contratos', 'tela-financeiro', 'tela-responsaveis'];
+  if (!carregado) carregando();
+  if (!carregado || listas.includes(alvo)) { if (!(await recarregar())) return; }
+  if (alvo === 'tela-contratos') renderContratos();
+  if (alvo === 'tela-novo') telaNovo(param);
+  if (alvo === 'tela-detalhe') telaDetalhe(param);
+  if (alvo === 'tela-financeiro') renderFinanceiro();
+  if (alvo === 'tela-responsaveis') renderResponsaveis();
+  window.scrollTo(0, 0);
+}
+addEventListener('hashchange', rota);
 
-/* =================== VALE: desenha o cartão em imagem e envia pelo WhatsApp =================== */
-const btnVale = document.getElementById('btn-vale');
-function rrPath(x, y, w, h, r) { const p = new Path2D(); if (p.roundRect) p.roundRect(x, y, w, h, r); else p.rect(x, y, w, h); return p; }
-function carinha(x, px, py, s, dark, yel) {
-  const R = (a, b, w, h, r, fill, stroke) => { const p = rrPath(px + a * s, py + b * s, w * s, h * s, r * s); if (fill) { x.fillStyle = fill; x.fill(p); } if (stroke) { x.lineWidth = 3 * s; x.strokeStyle = stroke; x.stroke(p); } };
-  R(14, 10, 72, 72, 16, dark); R(22, 18, 56, 26, 7, yel); R(14, 50, 72, 6, 0, '#F4845F');
-  R(6, 30, 7, 12, 2.5, dark); R(87, 30, 7, 12, 2.5, dark); R(22, 60, 14, 9, 4.5, yel); R(64, 60, 14, 9, 4.5, yel);
-  x.beginPath(); x.moveTo(px + 40 * s, py + 66 * s); x.quadraticCurveTo(px + 50 * s, py + 74 * s, px + 60 * s, py + 66 * s); x.lineWidth = 4 * s; x.lineCap = 'round'; x.strokeStyle = yel; x.stroke();
-  R(20, 78, 18, 12, 4, yel, dark); R(62, 78, 18, 12, 4, yel, dark);
-}
-function placa(x, px, py, size) { x.fillStyle = '#F6C510'; x.fill(rrPath(px, py, size, size, size * 13 / 60)); carinha(x, px + size * 3.5 / 60, py + size * 3.5 / 60, size * 53 / 60 / 100, '#0B0B0B', '#F6C510'); }
-async function desenharVale() {
-  const k = 4, W = 290 * k, H = 184 * k, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
-  try { await Promise.all([document.fonts.load('700 40px Inter'), document.fonts.load('600 40px Inter'), document.fonts.load('500 40px Inter')]); } catch (e) {}
-  x.save(); x.clip(rrPath(0, 0, W, H, 12 * k));
-  const g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#F7E27A'); g.addColorStop(.22, '#E0B93A'); g.addColorStop(.46, '#FAEAA2'); g.addColorStop(.7, '#CFA12A'); g.addColorStop(1, '#F3D86C'); x.fillStyle = g; x.fillRect(0, 0, W, H);
-  for (let y = 0; y < H; y += 2 * k) { x.fillStyle = 'rgba(255,255,255,.16)'; x.fillRect(0, y, W, k); x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(0, y + k, W, k); }
-  const sh = x.createLinearGradient(0, H, W, 0); sh.addColorStop(.35, 'rgba(255,255,255,0)'); sh.addColorStop(.5, 'rgba(255,255,255,.45)'); sh.addColorStop(.65, 'rgba(255,255,255,0)'); x.fillStyle = sh; x.fillRect(0, 0, W, H);
-  const cg = x.createLinearGradient(22 * k, 48 * k, 64 * k, 80 * k); cg.addColorStop(0, '#EFDB95'); cg.addColorStop(.55, '#B98F2C'); cg.addColorStop(1, '#E9CC72'); x.fillStyle = cg; x.fill(rrPath(22 * k, 48 * k, 42 * k, 32 * k, 7 * k));
-  x.strokeStyle = 'rgba(90,60,10,.6)'; x.lineWidth = k; x.stroke(rrPath(22 * k, 48 * k, 42 * k, 32 * k, 7 * k));
-  x.beginPath(); x.moveTo(22 * k, 58 * k); x.lineTo(64 * k, 58 * k); x.moveTo(22 * k, 69 * k); x.lineTo(64 * k, 69 * k); x.stroke(); x.stroke(rrPath(35 * k, 56 * k, 16 * k, 15 * k, 3 * k));
-  x.lineWidth = 1.6 * k; x.lineCap = 'round'; x.strokeStyle = '#5A4210'; [6, 9, 12].forEach(r => { x.beginPath(); x.arc(75 * k, 64 * k, r * k, -.65, .65); x.stroke(); });
-  placa(x, (290 - 18 - 46) * k, 16 * k, 46 * k);
-  const T = (t, px, py, font, fill, ls) => { x.font = font; x.fillStyle = fill; if ('letterSpacing' in x) x.letterSpacing = (ls || 0) + 'px'; x.fillText(t, px, py); };
-  x.textBaseline = 'alphabetic';
-  T('VALE DESCONTO', 22 * k, 29 * k, `600 ${9 * k}px Inter,system-ui,sans-serif`, '#5A4210', 9 * k * .24);
-  x.shadowColor = 'rgba(255,255,255,.55)'; x.shadowOffsetY = k; T('20%', 22 * k, 128 * k, `700 ${34 * k}px Inter,system-ui,sans-serif`, '#3A2B06', -34 * k * .03); x.shadowColor = 'transparent'; x.shadowOffsetY = 0;
-  const w20 = x.measureText('20%').width;
-  T('na primeira mensalidade', 22 * k + w20 + 8 * k, 128 * k, `500 ${11 * k}px Inter,system-ui,sans-serif`, '#5A4210', 0);
-  T('TIA PATRÍCIA E TIO VITOR', 22 * k, 166 * k, `600 ${8.5 * k}px Inter,system-ui,sans-serif`, '#5A4210', 8.5 * k * .16);
-  x.textAlign = 'right'; T('TURMA 2027', (290 - 22) * k, 166 * k, `600 ${8.5 * k}px Inter,system-ui,sans-serif`, '#5A4210', 8.5 * k * .16); x.textAlign = 'left';
-  x.restore();
-  return new Promise(res => c.toBlob(res, 'image/png'));
-}
-async function enviarVale() {
-  const txt = CONFIG.msgVale, url = 'https://wa.me/' + CONFIG.patricia.wa + '?text=' + encodeURIComponent(txt);
-  btnVale.disabled = true;
-  try {
-    const blob = await desenharVale();
-    const file = new File([blob], 'vale-desconto-pv-2027.png', { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: txt }); return; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-  } catch (e) { if (e && e.name === 'AbortError') return; }
-  finally { btnVale.disabled = false; }
-  if (!window.open(url, '_blank')) location.href = url;
-}
-if (btnVale) btnVale.addEventListener('click', enviarVale);
+/* ---------- login de verdade ---------- */
+document.getElementById('form-login').addEventListener('submit', async e => {
+  e.preventDefault(); if (!sb) return;
+  const email = document.getElementById('login-email').value.trim(), senhaEl = document.getElementById('login-senha'), btn = document.getElementById('login-btn');
+  if (!email || !senhaEl.value) return;
+  erroLogin(''); btn.disabled = true; btn.textContent = 'Entrando…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: senhaEl.value });
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if (error) { erroLogin(/invalid login credentials/i.test(error.message) ? 'E-mail ou senha incorretos.' : traduzErro(error)); return; }
+  senhaEl.value = ''; usuario = data.user; acessoOk = false; carregado = false;
+  irPara('#contratos');
+});
+document.getElementById('sair').addEventListener('click', async () => { await sb.auth.signOut(); limparEstado(); irPara('#login'); });
 
-/* =================== MEDALHA 3D (gira sozinha, com o dedo ou o mouse) =================== */
-const selo = document.getElementById('selo'), moeda = document.getElementById('moeda');
-if (selo && !reduce) {
-  let ry = 0, rx = -8, vy = .35, drag = false, lx = 0, ly = 0;
-  selo.addEventListener('pointerdown', e => { drag = true; lx = e.clientX; ly = e.clientY; selo.setPointerCapture(e.pointerId); });
-  selo.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; ry += dx * .6; rx = Math.max(-40, Math.min(40, rx - dy * .3)); vy = Math.max(-30, Math.min(30, dx * .6)); });
-  const solta = () => { drag = false; };
-  selo.addEventListener('pointerup', solta); selo.addEventListener('pointercancel', solta);
-  (function giro() { if (!drag) { ry += vy; vy += (.35 - vy) * .02; rx += (-8 - rx) * .03; } moeda.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`; requestAnimationFrame(giro); })();
+/* ---------- contratos: lista ---------- */
+let filtro = 'todos', busca = '';
+const rotulo = c => ({ assinado: 'Assinado ' + fmtData(c.assinatura && c.assinatura.em), aguardando: 'Aguardando assinatura', rascunho: 'Rascunho', cancelado: 'Cancelado' })[c.status];
+function renderContratos() {
+  const cs = DB.contratos, n = s => cs.filter(c => c.status === s).length;
+  document.getElementById('st-assinado').textContent = n('assinado');
+  document.getElementById('st-aguardando').textContent = n('aguardando');
+  document.getElementById('st-rascunho').textContent = n('rascunho');
+  const ocup = t => cs.filter(c => c.status === 'assinado' && c.turma === t).length;
+  document.getElementById('st-vagas').textContent = 'M ' + (LUGARES - ocup('Manhã')) + ' · T ' + (LUGARES - ocup('Tarde'));
+  const b = busca.toLowerCase();
+  const lista = cs.filter(c => (filtro === 'todos' || c.status === filtro) && (!b || (c.responsavel.nome + ' ' + c.crianca.nome + ' ' + c.bairro).toLowerCase().includes(b)));
+  const acao = c => c.status === 'aguardando' ? `<button class="btn ghost sm" data-copiar="${c.id}" type="button">Copiar link</button>` : c.status === 'assinado' ? `<button class="btn ghost sm" data-pdf="${c.id}" type="button">PDF</button>` : c.status === 'rascunho' ? `<button class="btn ghost sm" data-editar="${c.id}" type="button">Editar</button>` : '';
+  const vazio = cs.length ? 'Nenhum contrato aqui.' : 'Nenhum contrato ainda. Clique em "+ Novo contrato" para começar.';
+  document.getElementById('tab-contratos').innerHTML = lista.length ? lista.map(c => `<tr class="clicavel" data-id="${c.id}"><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}<small>${esc(c.crianca.serie)}</small></td><td>${esc(c.turma)}</td><td>${fmtBRL(c.mensalidade)}</td><td><span class="tag ${c.status}">${rotulo(c)}</span></td><td>${acao(c)}</td></tr>`).join('') : `<tr><td colspan="6" class="vazio">${vazio}</td></tr>`;
+}
+document.getElementById('tab-contratos').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b) { e.stopPropagation(); if (b.dataset.copiar) copiar(linkAssinatura(achar(b.dataset.copiar))); if (b.dataset.pdf) abrirPDF(achar(b.dataset.pdf)); if (b.dataset.editar) irPara('#novo/' + b.dataset.editar); return; }
+  const tr = e.target.closest('tr[data-id]'); if (tr) irPara('#contrato/' + tr.dataset.id);
+});
+document.querySelectorAll('.chip[data-f]').forEach(ch => ch.addEventListener('click', () => { filtro = ch.dataset.f; document.querySelectorAll('.chip[data-f]').forEach(x => x.classList.toggle('on', x === ch)); renderContratos(); }));
+document.getElementById('busca').addEventListener('input', e => { busca = e.target.value; renderContratos(); });
+document.getElementById('exportar').addEventListener('click', () => {
+  const cab = ['Responsável', 'CPF', 'WhatsApp', 'E-mail', 'Criança', 'Série', 'Turma', 'Bairro', 'Mensalidade', 'Status', 'Assinado em'];
+  const linhas = DB.contratos.map(c => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.responsavel.tel, c.responsavel.email, c.crianca.nome, c.crianca.serie, c.turma, c.bairro, c.mensalidade, c.status, c.assinatura ? fmtData(c.assinatura.em, true) : '']);
+  const csv = [cab, ...linhas].map(l => l.map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(';')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })); a.download = 'contratos-2027.csv'; a.click();
+});
+
+/* ---------- contratos: novo / editar ---------- */
+const formC = document.getElementById('form-contrato');
+SERIES.forEach(s => { const o = document.createElement('option'); o.textContent = s; formC.elements.serie.appendChild(o); });
+function telaNovo(id) {
+  formC.reset(); document.getElementById('erro-contrato').textContent = '';
+  formC.elements.id.value = ''; formC.elements.inicio.value = '2027-01-01'; formC.elements.fim.value = '2027-12-31'; formC.elements.vencimento.value = 10;
+  document.getElementById('novo-titulo').textContent = id ? 'Editar contrato' : 'Novo contrato';
+  const c = id && achar(id); if (!c) return;
+  const f = formC.elements; f.id.value = c.id; f.nome.value = c.responsavel.nome; f.cpf.value = fmtCPF(c.responsavel.cpf); f.tel.value = c.responsavel.tel; f.email.value = c.responsavel.email; f.crianca.value = c.crianca.nome; f.serie.value = c.crianca.serie; f.turma.value = c.turma; f.endereco.value = c.endereco; f.bairro.value = c.bairro; f.mensalidade.value = c.mensalidade; f.vencimento.value = c.vencimento; f.inicio.value = c.inicio; f.fim.value = c.fim; f.vale.value = c.vale ? 'sim' : 'nao'; f.obs.value = c.obs || '';
+}
+function lerForm() {
+  const f = formC.elements;
+  return { responsavel: { nome: f.nome.value.trim(), cpf: soDigitos(f.cpf.value), tel: f.tel.value.trim(), email: f.email.value.trim() }, crianca: { nome: f.crianca.value.trim(), serie: f.serie.value }, turma: f.turma.value, endereco: f.endereco.value.trim(), bairro: f.bairro.value.trim(), mensalidade: Number(f.mensalidade.value), vencimento: Number(f.vencimento.value) || 10, inicio: f.inicio.value, fim: f.fim.value, vale: f.vale.value === 'sim', obs: f.obs.value.trim() };
+}
+function validar(d) {
+  if (!d.responsavel.nome) return 'Preencha o nome do responsável.';
+  if (d.responsavel.cpf.length !== 11) return 'O CPF precisa ter 11 números.';
+  if (!d.responsavel.email) return 'Preencha o e-mail: é por ele que chega o código de assinatura.';
+  if (!d.crianca.nome) return 'Preencha o nome da criança.';
+  if (!d.crianca.serie) return 'Escolha a série.';
+  if (!d.turma) return 'Escolha a turma.';
+  if (!(d.mensalidade > 0)) return 'Informe a mensalidade.';
+  return '';
+}
+function travarForm(sim) { formC.querySelectorAll('button').forEach(b => { b.disabled = sim; }); }
+async function gravar(status) {
+  const d = lerForm(), erroEl = document.getElementById('erro-contrato'), erro = validar(d);
+  erroEl.textContent = erro; if (erro) return;
+  travarForm(true);
+  const { data, error } = await sb.rpc('salvar_contrato', { dados: {
+    id: formC.elements.id.value || null, status,
+    nome: d.responsavel.nome, cpf: d.responsavel.cpf, tel: d.responsavel.tel, email: d.responsavel.email,
+    crianca: d.crianca.nome, serie: d.crianca.serie, turma: d.turma, endereco: d.endereco, bairro: d.bairro,
+    mensalidade: d.mensalidade, vencimento: d.vencimento, vale: d.vale, inicio: d.inicio, fim: d.fim, obs: d.obs
+  } });
+  travarForm(false);
+  if (error) { erroEl.textContent = traduzErro(error); return; }
+  await recarregar();
+  irPara('#contrato/' + data);
+  toast(status === 'aguardando' ? (ASSINATURA_ATIVA ? 'Contrato gerado. Copie o link e envie no WhatsApp.' : 'Contrato gerado. A assinatura online ainda não está ativa.') : 'Rascunho salvo.');
+}
+formC.addEventListener('submit', e => { e.preventDefault(); gravar('aguardando'); });
+document.getElementById('salvar-rascunho').addEventListener('click', () => gravar('rascunho'));
+
+/* ---------- contratos: detalhe ---------- */
+let atual = null;
+function telaDetalhe(id) {
+  const c = achar(id); if (!c) { irPara('#contratos'); return; } atual = c;
+  document.getElementById('det-titulo').textContent = c.responsavel.nome + ' · ' + c.crianca.nome;
+  document.getElementById('det-status').innerHTML = `<span class="tag ${c.status}">${rotulo(c)}</span>`;
+  const kv = [['Responsável', c.responsavel.nome], ['CPF', fmtCPF(c.responsavel.cpf)], ['WhatsApp', c.responsavel.tel], ['E-mail', c.responsavel.email], ['Criança', c.crianca.nome], ['Série em 2027', c.crianca.serie], ['Turma', c.turma], ['Endereço', c.endereco + (c.bairro ? ', ' + c.bairro : '')], ['Mensalidade', fmtBRL(c.mensalidade) + ' · vence dia ' + c.vencimento], ['Vigência', fmtDia(c.inicio) + ' a ' + fmtDia(c.fim)], ['Vale desconto PV', c.vale ? 'Sim, 20% na 1ª mensalidade' : 'Não'], ['Observações', c.obs || '—']];
+  document.getElementById('det-kv').innerHTML = kv.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  const temLink = c.status === 'aguardando' || c.status === 'assinado';
+  document.getElementById('det-linkbox').hidden = !temLink; document.getElementById('det-link').value = temLink ? linkAssinatura(c) : '';
+  const a = c.assinatura;
+  const passos = [['Rascunho criado', fmtData(c.criadoEm, true), true], ['Link de assinatura gerado', c.enviadoEm ? fmtData(c.enviadoEm, true) : 'ainda não', !!c.enviadoEm], ['Assinado pelo responsável', a ? `${a.nome} · CPF ${fmtCPF(a.cpf)} · ${fmtData(a.em, true)} · IP ${a.ip} · impressão digital ${a.hash}` : 'ainda não', !!a]];
+  if (c.status === 'cancelado') passos.push(['Contrato cancelado', '', true]);
+  let marcouAtual = false;
+  document.getElementById('det-tl').innerHTML = passos.map(([t, s, feito], i) => { const cls = feito ? 'feito' : (!marcouAtual ? (marcouAtual = true, 'atual') : ''); return `<li class="${cls}"><i>${feito ? '✓' : i + 1}</i><div>${t}<small>${esc(s)}</small></div></li>`; }).join('');
+  const mostra = (id, sim) => { document.getElementById(id).hidden = !sim; };
+  mostra('det-gerar', c.status === 'rascunho'); mostra('det-editar', c.status === 'rascunho'); mostra('det-copiar', c.status === 'aguardando'); mostra('det-pdf', c.status !== 'rascunho'); mostra('det-cancelar', c.status === 'rascunho' || c.status === 'aguardando');
+}
+/* Atualiza o contrato só se ele ainda estiver num dos status permitidos */
+async function atualizarContrato(id, campos, statusPermitidos) {
+  const { data, error } = await sb.from('contratos').update(campos).eq('id', id).in('status', statusPermitidos).select('id');
+  if (error) { toast(traduzErro(error)); return false; }
+  await recarregar();
+  if (!data.length) { toast('Este contrato mudou em outro aparelho. A tela foi atualizada.'); return false; }
+  return true;
+}
+document.getElementById('det-gerar').addEventListener('click', async e => {
+  const b = e.currentTarget; b.disabled = true;
+  const ok = await atualizarContrato(atual.id, { status: 'aguardando', enviado_em: atual.enviadoEm || agora() }, ['rascunho']);
+  b.disabled = false; telaDetalhe(atual.id);
+  if (ok) toast(ASSINATURA_ATIVA ? 'Link gerado. Copie e envie no WhatsApp.' : 'Link gerado. A assinatura online ainda não está ativa.');
+});
+document.getElementById('det-editar').addEventListener('click', () => irPara('#novo/' + atual.id));
+document.getElementById('det-copiar').addEventListener('click', () => copiar(linkAssinatura(atual)));
+document.getElementById('det-pdf').addEventListener('click', () => abrirPDF(atual));
+document.getElementById('det-cancelar').addEventListener('click', async () => {
+  if (!confirm('Cancelar este contrato?')) return;
+  const ok = await atualizarContrato(atual.id, { status: 'cancelado', cancelado_em: agora() }, ['rascunho', 'aguardando']);
+  telaDetalhe(atual.id);
+  if (ok) toast('Contrato cancelado.');
+});
+
+/* ---------- PDF: abre uma página pronta para "Salvar como PDF" ---------- */
+function abrirPDF(c) {
+  const w = window.open('', '_blank'); if (!w) { toast('O navegador bloqueou a janela. Permita pop-ups para gerar o PDF.'); return; }
+  const a = c.assinatura;
+  const ass = a ? `ASSINATURA ELETRÔNICA\nAssinado por ${a.nome}, CPF ${fmtCPF(a.cpf)}, em ${fmtData(a.em, true)}.\nEndereço de rede (IP): ${a.ip}\nImpressão digital do documento: ${a.hash}` : 'Documento ainda sem assinatura.';
+  w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato ${esc(c.crianca.nome)} · 2027</title><style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.6;color:#111}pre{white-space:pre-wrap;font:inherit;margin:0}.ass{margin-top:32px;padding:16px;border:1px solid #999;font-size:14px}.dica{font-family:sans-serif;font-size:12px;color:#666;margin-bottom:20px}@media print{.dica{display:none}}</style></head><body><p class="dica">Use Ctrl+P e escolha "Salvar como PDF".</p><pre>${esc(textoContrato(c, false))}</pre><div class="ass"><pre>${esc(ass)}</pre></div><script>setTimeout(function(){window.print()},300)<\/script></body></html>`);
+  w.document.close();
 }
 
-/* =================== FOTOS E CARTÕES (sobem ao entrar na tela) =================== */
-if ('IntersectionObserver' in window) {
-  const itens = document.querySelectorAll('.rv');
-  itens.forEach(e => e.classList.add('esp'));
-  const ioR = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); ioR.unobserve(e.target); } }); }, { threshold: .2 });
-  itens.forEach(e => ioR.observe(e));
+/* ---------- tela do responsável: aviso até a etapa 6 ---------- */
+function telaAssinar() {
+  document.getElementById('form-assinar').hidden = true;
+  document.getElementById('ass-ok').hidden = true;
+  document.getElementById('ass-texto').textContent = 'A assinatura online ainda não está disponível. Se você recebeu este link, aguarde: a equipe da van vai avisar quando estiver liberada.';
 }
 
-/* =================== PRÉ-CADASTRO (vira carta, fecha e abre o WhatsApp) =================== */
-const formVaga = document.getElementById('form-vaga'), carta = document.getElementById('carta');
-if (formVaga) {
-  const selSerie = document.getElementById('serie');
-  CONFIG.series.forEach(s => { const o = document.createElement('option'); o.textContent = s; selSerie.appendChild(o); });
-  const abrirZap = url => { if (!window.open(url, '_blank')) location.href = url; };
-  formVaga.addEventListener('submit', e => {
-    e.preventDefault();
-    if (carta.classList.contains('enviando')) return;
-    const f = new FormData(formVaga), v = k => (f.get(k) || '').toString().trim() || '—';
-    const txt = [CONFIG.msgVaga, '', 'Nome: ' + v('nome'), 'Criança: ' + v('crianca'), 'Idade: ' + v('idade'), 'WhatsApp: ' + v('tel'), 'E-mail: ' + v('email'), 'Rua: ' + v('rua'), 'CEP: ' + v('cep'), 'Referência: ' + v('ref'), 'Série: ' + v('serie'), 'Turma: ' + v('turma')].join('\n');
-    const url = 'https://wa.me/' + CONFIG.patricia.wa + '?text=' + encodeURIComponent(txt);
-    if (reduce) { abrirZap(url); return; }
-    carta.classList.add('enviando');
-    setTimeout(() => abrirZap(url), 2000);
-    setTimeout(() => carta.classList.remove('enviando'), 6000);
+/* ---------- financeiro (prévia da fase 2) ---------- */
+function renderFinanceiro() {
+  const cs = DB.contratos.filter(c => c.status === 'assinado'), hoje = new Date();
+  let recebido = 0, aberto = 0, atrasados = 0;
+  const linhas = cs.map(c => {
+    let pagos = 0;
+    const cels = MESES.map((nomeMes, i) => {
+      const m = c.mensalidades[i + 1], valor = m ? Number(m.valor) : c.mensalidade, pago = !!(m && m.pago);
+      const venc = m ? new Date(m.vencimento + 'T12:00:00') : new Date(ANO, i, c.vencimento), atr = !pago && venc < hoje;
+      if (pago) { recebido += valor; pagos++; } else aberto += valor;
+      if (atr) atrasados++;
+      return `<td><button class="mes ${pago ? 'pago' : atr ? 'atrasado' : ''}" data-id="${c.id}" data-m="${i + 1}" title="${nomeMes}${m ? '' : ' · mensalidade ainda não criada'}" type="button"${m ? '' : ' disabled'}>✓</button></td>`;
+    }).join('');
+    return `<tr><td>${esc(c.responsavel.nome)}<small>${esc(c.crianca.nome)} · ${esc(c.turma)} · ${fmtBRL(c.mensalidade)}</small></td>${cels}<td><b>${pagos}/12</b></td></tr>`;
   });
-  addEventListener('pageshow', () => carta.classList.remove('enviando'));
+  document.getElementById('tab-fin').innerHTML = linhas.length ? linhas.join('') : '<tr><td colspan="14" class="vazio">Nenhum contrato assinado ainda. As mensalidades aparecem aqui depois da assinatura.</td></tr>';
+  document.getElementById('fin-recebido').textContent = fmtBRL(recebido);
+  document.getElementById('fin-aberto').textContent = fmtBRL(aberto);
+  document.getElementById('fin-atrasados').textContent = atrasados;
 }
+document.getElementById('tab-fin').addEventListener('click', async e => {
+  const b = e.target.closest('button.mes'); if (!b || b.disabled) return;
+  const c = achar(b.dataset.id), m = c && c.mensalidades[b.dataset.m]; if (!m) return;
+  b.disabled = true;
+  const novo = !m.pago;
+  const { error } = await sb.from('mensalidades').update({ pago: novo, pago_em: novo ? hojeISO() : null }).eq('id', m.id);
+  if (error) { toast(traduzErro(error)); b.disabled = false; return; }
+  await recarregar(); renderFinanceiro();
+});
+
+/* ---------- responsáveis ---------- */
+function renderResponsaveis() {
+  const nomeStatus = { assinado: 'Assinado', aguardando: 'Aguardando assinatura', rascunho: 'Rascunho', cancelado: 'Cancelado' };
+  const porCPF = {};
+  DB.contratos.forEach(c => { const k = c.responsavel.cpf; porCPF[k] = porCPF[k] || { r: c.responsavel, filhos: [], status: [] }; porCPF[k].filhos.push(c.crianca.nome); porCPF[k].status.push(c.status); });
+  const lista = Object.values(porCPF);
+  document.getElementById('tab-resp').innerHTML = lista.length ? lista.map(x => `<tr><td>${esc(x.r.nome)}<small>CPF ${fmtCPF(x.r.cpf)}</small></td><td>${esc(x.r.tel)}<small>${esc(x.r.email)}</small></td><td>${esc(x.filhos.join(', '))}</td><td>${x.status.map(s => `<span class="tag ${s}">${nomeStatus[s] || s}</span>`).join(' ')}</td></tr>`).join('') : '<tr><td colspan="4" class="vazio">Nenhum responsável cadastrado.</td></tr>';
+}
+
+/* ---------- início ---------- */
+async function iniciar() {
+  if (sb) {
+    const { data } = await sb.auth.getSession();
+    usuario = data.session ? data.session.user : null;
+    sb.auth.onAuthStateChange((evento, sessao) => {
+      if (evento === 'SIGNED_OUT') { limparEstado(); setTimeout(rota, 0); }
+      else if (sessao) usuario = sessao.user;
+    });
+  }
+  rota();
+}
+iniciar();
