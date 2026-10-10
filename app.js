@@ -1,7 +1,7 @@
 /* =================== VAN PV · painel conectado ao banco (Supabase) ===================
    Os dados ficam no banco. O navegador guarda só a sessão de login.
    A assinatura online usa a Edge Function "assinatura" no Supabase. */
-const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = true;
+const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = true; /* LUGARES = lugares por turma */
 const DIAS_LEMBRETE = 3; /* lembrar mensalidades que vencem de hoje até daqui a X dias */
 const SERIES = ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'];
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -27,6 +27,8 @@ const fmtCPF = d => { d = soDigitos(d); return d.length === 11 ? d.replace(/(\d{
 const fmtBRL = n => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtData = (iso, hora) => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleDateString('pt-BR') + (hora ? ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''); };
 const fmtDia = s => s ? s.split('-').reverse().join('/') : '—';
+/* Data N dias antes de uma data "aaaa-mm-dd" (devolve no mesmo formato) */
+const diasAntes = (iso, n) => { if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() - n); return d.toLocaleDateString('sv-SE'); };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const primeiroNome = s => (s || '').trim().split(' ')[0];
 let tt; function toast(m) { const el = document.getElementById('toast'); el.textContent = m; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 3200); }
@@ -92,19 +94,20 @@ async function recarregar() {
   DB.contratos = data.map(deBanco); carregado = true; atualizarSelo(); return true;
 }
 
-/* ---------- dados e números do contrato (PREENCHER / CONFERIR) ---------- */
+/* ---------- dados e números do contrato (PREENCHER / CONFERIR) ----------
+   O CPF da Tia Patrícia NÃO fica aqui, porque este arquivo é público.
+   Ele entra só na via que o responsável recebe pelo link de assinatura (montada no servidor). */
 const CONTRATADA = {
   nome: 'Patrícia Maia',
-  cpf: '093.019.988-07',
   endereco: 'Rua Tomas Sepe, 615, Cotia/SP, CEP 06711-270',
   whatsapp: '(11) 99692-9358',
   email: 'tiapaty_2012@hotmail.com'
 };
-const MES_RESCISAO = '[MÊS]';           /* 2º mês em que dá para desistir sem multa */
-const REAJUSTE = 0.10;                  /* 10% a cada 6 meses (vale de julho em diante) */
-const ESPERA_MIN = 3;                   /* minutos que a van espera no ponto */
-const DIAS_ATRASO_RESCISAO = 60;        /* atraso no pagamento que permite encerrar o contrato */
-const PRAZO_RENOVACAO = '[DIA E MÊS]';  /* até quando o aluno atual garante a vaga do ano seguinte */
+const MES_RESCISAO = '[MÊS]';     /* 2º mês em que dá para desistir sem multa */
+const REAJUSTE = 0.10;            /* 10% a cada 6 meses (vale de julho em diante) */
+const ESPERA_MIN = 3;             /* minutos que a van espera no ponto */
+const DIAS_ATRASO_RESCISAO = 60;  /* atraso no pagamento que permite encerrar o contrato */
+const DIAS_RENOVACAO = 30;        /* para garantir a vaga do ano seguinte, avisar até X dias antes do fim do contrato */
 const FORO = 'Osasco/SP';
 
 /* ---------- texto do contrato ---------- */
@@ -117,7 +120,7 @@ function textoContrato(c, html) {
     'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE TRANSPORTE DE ESTUDANTES · ' + ANO, '',
     'IDENTIFICAÇÃO DAS PARTES CONTRATANTES:', '',
     'CONTRATANTE: ' + v(c.responsavel.nome) + ', CPF ' + v(fmtCPF(c.responsavel.cpf)) + ', telefone ' + v(c.responsavel.tel) + ', e-mail ' + v(c.responsavel.email) + ', residente no endereço de embarque indicado abaixo.',
-    'CONTRATADA: ' + v(CONTRATADA.nome) + ', CPF ' + v(CONTRATADA.cpf) + ', residente e domiciliada em ' + v(CONTRATADA.endereco) + ', que presta o serviço com o nome Van Escolar Tia Patrícia e Tio Vitor.',
+    'CONTRATADA: ' + v(CONTRATADA.nome) + ' (CPF incluído na via de assinatura), residente e domiciliada em ' + v(CONTRATADA.endereco) + ', que presta o serviço com o nome Van Escolar Tia Patrícia e Tio Vitor.',
     'ALUNO(A): ' + v(c.crianca.nome) + ', ' + v(c.crianca.serie) + ', turma da ' + v(c.turma.toLowerCase()) + '.',
     'ENDEREÇO DE EMBARQUE: ' + v(c.endereco) + ', ' + v(c.bairro) + '.', '',
     'Contrato que fazem entre si as partes acima identificadas para a prestação do serviço de transporte coletivo de estudantes porta a porta, sob o regime de fretamento, entre o endereço de embarque e a Fundação Bradesco (Cidade de Deus, Osasco), ida e volta, nos dias letivos, mediante as cláusulas e condições a seguir:', '',
@@ -175,7 +178,7 @@ function textoContrato(c, html) {
 
     'Cláusula 19ª – USO DE IMAGEM. A CONTRATADA não usará fotos ou vídeos do(a) aluno(a) em grupos de mensagens, redes sociais ou materiais de divulgação, salvo autorização específica do CONTRATANTE, dada à parte e por escrito. Essa autorização é opcional, pode ser recusada ou cancelada a qualquer momento e não interfere neste contrato.', '',
 
-    'Cláusula 20ª – RESERVA DE VAGA PARA O ANO SEGUINTE. Os alunos com este contrato terão prioridade na reserva de vaga para o ano seguinte, desde que o CONTRATANTE manifeste interesse até ' + v(PRAZO_RENOVACAO + ' de ' + ANO) + ' e esteja com as parcelas em dia. Após essa data, a vaga poderá ser oferecida a outros interessados. A renovação depende de novo contrato, conforme a Cláusula 1ª.', '',
+    'Cláusula 20ª – RESERVA DE VAGA PARA O ANO SEGUINTE. Os alunos com este contrato terão prioridade na reserva de vaga para o ano seguinte, desde que o CONTRATANTE manifeste interesse com antecedência mínima de ' + v(DIAS_RENOVACAO + ' dias') + ' do término deste contrato, ou seja, até ' + v(fmtDia(diasAntes(c.fim, DIAS_RENOVACAO))) + ', e esteja com as parcelas em dia. Após essa data, a vaga poderá ser oferecida a outros interessados. A renovação depende de novo contrato, conforme a Cláusula 1ª.', '',
 
     'Cláusula 21ª – OUTRAS CONDIÇÕES. ' + v(c.obs || '—'), '',
 
@@ -290,6 +293,21 @@ document.getElementById('form-nova-senha').addEventListener('submit', async e =>
   irPara('#contratos');
 });
 
+/* ---------- lugares por turma (automático) ----------
+   Ocupa lugar: contrato ASSINADO ou AGUARDANDO assinatura (a vaga fica reservada).
+   Rascunho e cancelado não ocupam: cancelou, o lugar volta na hora. */
+function ocupacao(turma, ignorarId) {
+  const cs = DB.contratos.filter(c => c.turma === turma && c.id !== ignorarId);
+  const assinados = cs.filter(c => c.status === 'assinado').length;
+  const aguardando = cs.filter(c => c.status === 'aguardando').length;
+  return { assinados, aguardando, ocupados: assinados + aguardando, livres: Math.max(LUGARES - assinados - aguardando, 0) };
+}
+/* Devolve uma mensagem de erro se a turma estiver lotada (ou '' se tiver vaga) */
+function erroLotada(turma, ignorarId) {
+  if (ocupacao(turma, ignorarId).livres > 0) return '';
+  return `A turma da ${turma.toLowerCase()} está lotada (${LUGARES} de ${LUGARES} lugares). Escolha a outra turma, salve como rascunho ou cancele um contrato que não vai ser assinado.`;
+}
+
 /* ---------- contratos: lista ---------- */
 let filtro = 'todos', busca = '';
 const rotulo = c => ({ assinado: 'Assinado ' + fmtData(c.assinatura && c.assinatura.em), aguardando: 'Aguardando assinatura', rascunho: 'Rascunho', cancelado: 'Cancelado' })[c.status];
@@ -298,8 +316,14 @@ function renderContratos() {
   document.getElementById('st-assinado').textContent = n('assinado');
   document.getElementById('st-aguardando').textContent = n('aguardando');
   document.getElementById('st-rascunho').textContent = n('rascunho');
-  const ocup = t => cs.filter(c => c.status === 'assinado' && c.turma === t).length;
-  document.getElementById('st-vagas').textContent = 'M ' + (LUGARES - ocup('Manhã')) + ' · T ' + (LUGARES - ocup('Tarde'));
+  /* Cartão de lugares: o número sobe sozinho a cada contrato gerado */
+  const om = ocupacao('Manhã'), ot = ocupacao('Tarde'), stV = document.getElementById('st-vagas'), card = stV.closest('.stat');
+  card.querySelector('.lbl').textContent = 'Lugares ocupados (manhã · tarde)';
+  stV.textContent = `M ${om.ocupados}/${LUGARES} · T ${ot.ocupados}/${LUGARES}`;
+  stV.className = (!om.livres || !ot.livres) ? 'warn' : '';
+  let det = card.querySelector('small'); if (!det) { det = document.createElement('small'); card.appendChild(det); }
+  const reservados = om.aguardando + ot.aguardando;
+  det.textContent = `Livres: manhã ${om.livres} · tarde ${ot.livres}` + (reservados ? ` · ${reservados} reservado(s) aguardando assinatura` : '');
   const b = busca.toLowerCase();
   const lista = cs.filter(c => (filtro === 'todos' || c.status === filtro) && (!b || (c.responsavel.nome + ' ' + c.crianca.nome + ' ' + c.bairro).toLowerCase().includes(b)));
   const acao = c => c.status === 'aguardando' ? `<button class="btn or sm" data-whats="${c.id}" type="button">WhatsApp</button> <button class="btn ghost sm" data-copiar="${c.id}" type="button">Copiar mensagem</button>` : c.status === 'assinado' ? `<button class="btn ghost sm" data-pdf="${c.id}" type="button">PDF</button>` : c.status === 'rascunho' ? `<button class="btn ghost sm" data-editar="${c.id}" type="button">Editar</button>` : '';
@@ -325,10 +349,15 @@ document.getElementById('exportar').addEventListener('click', () => {
 /* ---------- contratos: novo / editar ---------- */
 const formC = document.getElementById('form-contrato');
 SERIES.forEach(s => { const o = document.createElement('option'); o.textContent = s; formC.elements.serie.appendChild(o); });
+/* Mostra as vagas livres nos botões da turma: "Manhã (20 livres)" */
+function mostrarVagasNoForm(ignorarId) {
+  formC.querySelectorAll('input[name=turma]').forEach(inp => { inp.parentElement.lastChild.textContent = `${inp.value} (${ocupacao(inp.value, ignorarId).livres} livres)`; });
+}
 function telaNovo(id) {
   formC.reset(); document.getElementById('erro-contrato').textContent = '';
   formC.elements.id.value = ''; formC.elements.inicio.value = '2027-01-01'; formC.elements.fim.value = '2027-12-31'; formC.elements.vencimento.value = 10;
   document.getElementById('novo-titulo').textContent = id ? 'Editar contrato' : 'Novo contrato';
+  mostrarVagasNoForm(id || null);
   const c = id && achar(id); if (!c) return;
   const f = formC.elements; f.id.value = c.id; f.nome.value = c.responsavel.nome; f.cpf.value = fmtCPF(c.responsavel.cpf); f.tel.value = c.responsavel.tel; f.email.value = c.responsavel.email; f.crianca.value = c.crianca.nome; f.serie.value = c.crianca.serie; f.turma.value = c.turma; f.endereco.value = c.endereco; f.bairro.value = c.bairro; f.mensalidade.value = c.mensalidade; f.vencimento.value = c.vencimento; f.inicio.value = c.inicio; f.fim.value = c.fim; f.vale.value = c.vale ? 'sim' : 'nao'; f.obs.value = c.obs || '';
 }
@@ -348,7 +377,9 @@ function validar(d) {
 }
 function travarForm(sim) { formC.querySelectorAll('button').forEach(b => { b.disabled = sim; }); }
 async function gravar(status) {
-  const d = lerForm(), erroEl = document.getElementById('erro-contrato'), erro = validar(d);
+  const d = lerForm(), erroEl = document.getElementById('erro-contrato');
+  /* Rascunho pode ser salvo mesmo com a turma lotada (lista de espera); gerar link, não */
+  const erro = validar(d) || (status === 'aguardando' ? erroLotada(d.turma, formC.elements.id.value || null) : '');
   erroEl.textContent = erro; if (erro) return;
   travarForm(true);
   const { data, error } = await sb.rpc('salvar_contrato', { dados: {
@@ -393,6 +424,7 @@ async function atualizarContrato(id, campos, statusPermitidos) {
   return true;
 }
 document.getElementById('det-gerar').addEventListener('click', async e => {
+  const lotada = erroLotada(atual.turma, atual.id); if (lotada) { toast(lotada); return; }
   const b = e.currentTarget; b.disabled = true;
   const ok = await atualizarContrato(atual.id, { status: 'aguardando', enviado_em: atual.enviadoEm || agora() }, ['rascunho']);
   b.disabled = false; telaDetalhe(atual.id);
