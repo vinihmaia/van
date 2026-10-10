@@ -92,23 +92,94 @@ async function recarregar() {
   DB.contratos = data.map(deBanco); carregado = true; atualizarSelo(); return true;
 }
 
-/* ---------- texto do contrato (MODELO DE DEMONSTRAÇÃO) ---------- */
+/* ---------- dados e números do contrato (PREENCHER / CONFERIR) ---------- */
+const CONTRATADA = {
+  nome: 'Patrícia Maia',
+  cpf: '093.019.988-07',
+  endereco: 'Rua Tomas Sepe, 615, Cotia/SP, CEP 06711-270',
+  whatsapp: '(11) 99692-9358',
+  email: 'tiapaty_2012@hotmail.com'
+};
+const MES_RESCISAO = '[MÊS]';           /* 2º mês em que dá para desistir sem multa */
+const REAJUSTE = 0.10;                  /* 10% a cada 6 meses (vale de julho em diante) */
+const ESPERA_MIN = 3;                   /* minutos que a van espera no ponto */
+const DIAS_ATRASO_RESCISAO = 60;        /* atraso no pagamento que permite encerrar o contrato */
+const PRAZO_RENOVACAO = '[DIA E MÊS]';  /* até quando o aluno atual garante a vaga do ano seguinte */
+const FORO = 'Osasco/SP';
+
+/* ---------- texto do contrato ---------- */
 function textoContrato(c, html) {
   const v = s => html ? '<strong>' + esc(s) + '</strong>' : String(s);
+  const m1 = Number(c.mensalidade);                          /* janeiro a junho */
+  const m2 = Math.round(m1 * (1 + REAJUSTE) * 100) / 100;    /* julho a dezembro (+10%) */
+  const total = 6 * m1 + 6 * m2 - (c.vale ? m1 * 0.2 : 0);   /* desconta o vale da 1ª parcela */
   const linhas = [
-    'CONTRATO DE PRESTAÇÃO DE SERVIÇO DE TRANSPORTE ESCOLAR · TURMA 2027',
-    '(modelo de demonstração: as cláusulas definitivas serão definidas com a Tia Patrícia)', '',
-    'CONTRATADA: Van Escolar Tia Patrícia e Tio Vitor.',
-    'CONTRATANTE: ' + v(c.responsavel.nome) + ', CPF ' + v(fmtCPF(c.responsavel.cpf)) + ', telefone ' + v(c.responsavel.tel) + ', e-mail ' + v(c.responsavel.email) + '.',
+    'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE TRANSPORTE DE ESTUDANTES · ' + ANO, '',
+    'IDENTIFICAÇÃO DAS PARTES CONTRATANTES:', '',
+    'CONTRATANTE: ' + v(c.responsavel.nome) + ', CPF ' + v(fmtCPF(c.responsavel.cpf)) + ', telefone ' + v(c.responsavel.tel) + ', e-mail ' + v(c.responsavel.email) + ', residente no endereço de embarque indicado abaixo.',
+    'CONTRATADA: ' + v(CONTRATADA.nome) + ', CPF ' + v(CONTRATADA.cpf) + ', residente e domiciliada em ' + v(CONTRATADA.endereco) + ', que presta o serviço com o nome Van Escolar Tia Patrícia e Tio Vitor.',
     'ALUNO(A): ' + v(c.crianca.nome) + ', ' + v(c.crianca.serie) + ', turma da ' + v(c.turma.toLowerCase()) + '.',
     'ENDEREÇO DE EMBARQUE: ' + v(c.endereco) + ', ' + v(c.bairro) + '.', '',
-    '1. OBJETO. Transporte do(a) aluno(a) entre o endereço acima e a Fundação Bradesco (Cidade de Deus, Osasco), ida e volta, nos dias letivos.',
-    '2. VIGÊNCIA. De ' + v(fmtDia(c.inicio)) + ' a ' + v(fmtDia(c.fim)) + '.',
-    '3. MENSALIDADE. ' + v(fmtBRL(c.mensalidade)) + ' por mês, com vencimento todo dia ' + v(c.vencimento) + ', em dinheiro ou Pix, durante 12 meses, inclusive janeiro e fevereiro.',
-    c.vale ? '3.1. VALE DESCONTO PV. Na primeira mensalidade será aplicado desconto de 20%.' : null,
-    '4. FALTAS. O responsável avisa pelo WhatsApp com antecedência, inclusive em caso de atestado médico.',
-    '5. RESCISÃO. [a definir com a Tia Patrícia]',
-    '6. OUTRAS CONDIÇÕES. ' + v(c.obs || '—'), '',
+    'Contrato que fazem entre si as partes acima identificadas para a prestação do serviço de transporte coletivo de estudantes porta a porta, sob o regime de fretamento, entre o endereço de embarque e a Fundação Bradesco (Cidade de Deus, Osasco), ida e volta, nos dias letivos, mediante as cláusulas e condições a seguir:', '',
+
+    'Cláusula 1ª – VIGÊNCIA. O presente contrato terá validade de ' + v(fmtDia(c.inicio)) + ' a ' + v(fmtDia(c.fim)) + ' e poderá ser renovado para o ano seguinte, mediante assinatura de novo contrato, se houver interesse das partes.',
+    '§ 1º – Este contrato poderá ser rescindido por qualquer das partes durante o primeiro mês de sua assinatura ou durante o mês de ' + v(MES_RESCISAO) + ', sendo devido pelo CONTRATANTE somente o valor proporcional aos dias utilizados.',
+    '§ 2º – Fora desses períodos, o CONTRATANTE poderá interromper este contrato mediante o pagamento de multa no valor de 01 (uma) parcela mensal, subsequente à formalização por escrito da rescisão deste contrato.', '',
+
+    'Cláusula 2ª – SEMESTRES. Para efeito de interpretação deste instrumento, considera-se como 1º semestre os meses de fevereiro a junho e como 2º semestre os meses de agosto a dezembro.', '',
+
+    'Cláusula 3ª – VALOR TOTAL. O valor total do presente contrato é de ' + v(fmtBRL(total)) + ', dividido em 12 (doze) parcelas mensais, de janeiro a dezembro. As parcelas dos meses de férias escolares (janeiro e julho) são devidas normalmente, pois a vaga do(a) aluno(a) na van fica reservada durante todo o ano.',
+    c.vale ? 'Parágrafo único – VALE DESCONTO PV. Na primeira parcela será aplicado desconto de 20% (vinte por cento), já considerado no valor total acima.' : null, '',
+
+    'Cláusula 4ª – VALOR DA PARCELA. O valor de cada parcela será de ' + v(fmtBRL(m1)) + ' de janeiro a junho e de ' + v(fmtBRL(m2)) + ' de julho a dezembro, já com o reajuste previsto na Cláusula 6ª.',
+    '§ 1º – As parcelas vencerão no dia ' + v(c.vencimento) + ' de cada mês e poderão ser pagas em dinheiro ou Pix.',
+    '§ 2º – Incidirão multa de 10% (dez por cento) e juros de 1% (um por cento) ao mês sobre as parcelas não pagas na data definida nesta cláusula.', '',
+
+    'Cláusula 5ª – PANDEMIA OU QUARENTENA. Em caso de pandemia, quarentena ou determinação de autoridade pública que suspenda as aulas presenciais e impeça a prestação do serviço, o CONTRATANTE continuará obrigado ao pagamento de 75% (setenta e cinco por cento) do valor da parcela mensal enquanto durar a suspensão. Esse percentual se justifica porque a CONTRATADA mantém custos fixos que não são interrompidos nesse período, em especial as parcelas do financiamento da van escolar, assumido em seu nome.',
+    'Parágrafo único – Com a retomada das aulas presenciais, a parcela volta ao valor integral a partir do mês em que o transporte for retomado.', '',
+
+    'Cláusula 6ª – REAJUSTE SEMESTRAL. Em razão dos aumentos de combustível (gasolina) e de pedágio, o valor da parcela é reajustado em 10% (dez por cento) a cada 6 (seis) meses. Neste contrato, o reajuste se aplica a partir da parcela de julho, nos valores já fixados na Cláusula 4ª.', '',
+
+    'Cláusula 7ª – OBRIGAÇÕES DA CONTRATADA. A CONTRATADA se obriga a: (a) manter o veículo com a autorização do órgão municipal competente e com as vistorias exigidas pelo Código de Trânsito Brasileiro em dia; (b) conduzir o veículo com motorista habilitado na forma da lei para o transporte escolar; (c) manter o veículo em boas condições de conservação, limpeza e segurança, com cinto de segurança em todos os assentos; (d) cumprir o roteiro e os horários combinados, ressalvados os imprevistos de trânsito.', '',
+
+    'Cláusula 8ª – ROTEIRO, HORÁRIOS E TEMPO DE ESPERA. A CONTRATADA define o roteiro e os horários de embarque, que poderão ser ajustados ao longo do ano, com aviso prévio ao CONTRATANTE.',
+    '§ 1º – O(a) aluno(a) deverá estar pronto(a) no local de embarque no horário combinado. A van aguardará no máximo ' + v(ESPERA_MIN + ' minutos') + '; após esse tempo, seguirá viagem para não atrasar os demais alunos.',
+    '§ 2º – A perda do transporte por atraso do(a) aluno(a) não gera desconto na parcela, cabendo ao CONTRATANTE levá-lo(a) à escola por seus próprios meios.', '',
+
+    'Cláusula 9ª – RESPONSABILIDADE. A responsabilidade da CONTRATADA pelo(a) aluno(a) começa no momento do embarque e termina no desembarque, no portão da escola ou no endereço de embarque. A CONTRATADA não responde por fatos ocorridos antes do embarque, depois do desembarque ou dentro da escola.', '',
+
+    'Cláusula 10ª – PESSOAS AUTORIZADAS. Na volta, o(a) aluno(a) somente será entregue ao CONTRATANTE ou às pessoas que ele autorizar por escrito, em lista entregue à CONTRATADA no início do contrato e atualizada sempre que necessário.',
+    '§ 1º – Se não houver pessoa autorizada para receber o(a) aluno(a), ele(a) permanecerá na van até o fim do roteiro, e a CONTRATADA entrará em contato com o CONTRATANTE, que deverá buscá-lo(a) no último ponto do roteiro ou em local combinado. Em nenhuma hipótese o(a) aluno(a) será deixado(a) sozinho(a).',
+    '§ 2º – O(a) aluno(a) só poderá descer sem ninguém para recebê-lo(a) mediante autorização por escrito do CONTRATANTE, que assume integralmente essa responsabilidade.', '',
+
+    'Cláusula 11ª – SAÚDE. O CONTRATANTE informará por escrito à CONTRATADA as alergias, problemas de saúde e cuidados especiais do(a) aluno(a), além de ao menos dois contatos de emergência, mantendo essas informações atualizadas.',
+    'Parágrafo único – A CONTRATADA não administra medicamentos. Em caso de mal-estar ou emergência durante o trajeto, a CONTRATADA comunicará imediatamente o CONTRATANTE e, se necessário, acionará o serviço de emergência (SAMU 192).', '',
+
+    'Cláusula 12ª – IMPREVISTOS COM O VEÍCULO OU O MOTORISTA. Em caso de defeito no veículo, doença do motorista ou outro imprevisto, a CONTRATADA providenciará veículo ou motorista substituto, igualmente habilitado, ou avisará o CONTRATANTE com a maior antecedência possível.', '',
+
+    'Cláusula 13ª – FALTAS E DIAS SEM AULA. O CONTRATANTE avisará pelo WhatsApp, com antecedência, as faltas do(a) aluno(a), inclusive em caso de atestado médico. Faltas, feriados, recessos, greves e outros dias sem aula não geram desconto na parcela, ressalvado o disposto na Cláusula 5ª.',
+    'Parágrafo único – Passeios, eventos e aulas fora do calendário regular não estão incluídos neste contrato e poderão ser combinados à parte.', '',
+
+    'Cláusula 14ª – MUDANÇA DE ENDEREÇO. O CONTRATANTE avisará a mudança de endereço com antecedência mínima de 15 (quinze) dias. Se o novo endereço estiver fora do roteiro, a CONTRATADA poderá recusar o atendimento, caso em que o contrato será rescindido sem multa para nenhuma das partes, ou propor novo valor, que só valerá se aceito pelo CONTRATANTE.', '',
+
+    'Cláusula 15ª – COMPORTAMENTO E DANOS. O(a) aluno(a) deverá permanecer sentado(a) e com o cinto de segurança afivelado durante todo o trajeto, e respeitar o motorista, a equipe da van e os colegas.',
+    '§ 1º – Os danos causados ao veículo pelo(a) aluno(a) serão ressarcidos pelo CONTRATANTE, mediante comprovação do valor do conserto.',
+    '§ 2º – Em caso de comportamento grave ou repetido que coloque em risco a segurança, a CONTRATADA advertirá o CONTRATANTE por escrito; persistindo o problema, poderá rescindir o contrato, sem multa para nenhuma das partes.', '',
+
+    'Cláusula 16ª – OBJETOS PESSOAIS. A CONTRATADA não se responsabiliza por objetos pessoais, celulares ou valores levados pelo(a) aluno(a). Objetos esquecidos na van serão guardados e devolvidos ao CONTRATANTE.', '',
+
+    'Cláusula 17ª – ATRASO NO PAGAMENTO. Havendo atraso superior a ' + v(DIAS_ATRASO_RESCISAO + ' dias') + ' em qualquer parcela, a CONTRATADA poderá rescindir este contrato, mediante aviso por escrito com antecedência mínima de 15 (quinze) dias, sem prejuízo da cobrança dos valores devidos, com a multa e os juros da Cláusula 4ª.',
+    'Parágrafo único – A cobrança será sempre feita diretamente ao CONTRATANTE, de forma reservada, nunca ao(à) aluno(a) ou na presença dos colegas.', '',
+
+    'Cláusula 18ª – COMUNICAÇÃO OFICIAL. As comunicações entre as partes, inclusive avisos, advertências e o pedido de rescisão por escrito previsto na Cláusula 1ª, serão válidas quando feitas por WhatsApp ou e-mail, usando os contatos informados neste contrato: os do CONTRATANTE, indicados acima, e os da CONTRATADA, WhatsApp ' + v(CONTRATADA.whatsapp) + ' e e-mail ' + v(CONTRATADA.email) + '. Cada parte deve avisar a outra se mudar de contato.', '',
+
+    'Cláusula 19ª – USO DE IMAGEM. A CONTRATADA não usará fotos ou vídeos do(a) aluno(a) em grupos de mensagens, redes sociais ou materiais de divulgação, salvo autorização específica do CONTRATANTE, dada à parte e por escrito. Essa autorização é opcional, pode ser recusada ou cancelada a qualquer momento e não interfere neste contrato.', '',
+
+    'Cláusula 20ª – RESERVA DE VAGA PARA O ANO SEGUINTE. Os alunos com este contrato terão prioridade na reserva de vaga para o ano seguinte, desde que o CONTRATANTE manifeste interesse até ' + v(PRAZO_RENOVACAO + ' de ' + ANO) + ' e esteja com as parcelas em dia. Após essa data, a vaga poderá ser oferecida a outros interessados. A renovação depende de novo contrato, conforme a Cláusula 1ª.', '',
+
+    'Cláusula 21ª – OUTRAS CONDIÇÕES. ' + v(c.obs || '—'), '',
+
+    'Cláusula 22ª – FORO. Fica eleito o foro da comarca de ' + v(FORO) + ' para resolver as questões decorrentes deste contrato.', '',
     'Ao assinar eletronicamente, o CONTRATANTE declara que leu e concorda com todas as cláusulas acima.'
   ].filter(l => l !== null);
   return linhas.join('\n');
