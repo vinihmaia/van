@@ -279,3 +279,18 @@ body.travado{overflow:hidden}
 [data-tema="escuro"] .toast{background:#F3EDE6;color:#1A1410}
 [data-tema="escuro"] .parada{border-bottom-color:rgba(255,255,255,.06)}
 [data-tema="escuro"] .lcard .marca svg{filter:invert(1) hue-rotate(180deg)}
+/* ===== DESPESAS E LUCRO ===== */
+.secao .acts{display:flex;gap:8px;flex-wrap:wrap}
+.stat b.neg{color:var(--red)}
+.desp-mes{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--mu)}
+.desp-mes input{border:1px solid rgba(26,20,16,.15);border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;background:#fff;color:var(--tx)}
+.desp-cats{display:grid;gap:10px;margin-bottom:12px}
+.desp-cat{display:grid;grid-template-columns:150px 1fr 100px 40px;gap:10px;align-items:center;font-size:13.5px}
+.desp-cat b{text-align:right}
+.desp-cat small{color:var(--mu2);text-align:right}
+.desp-barra{height:10px;background:var(--bg);border-radius:999px;overflow:hidden}
+.desp-barra i{display:block;height:100%;background:var(--ac);border-radius:999px}
+#form-desp .rads{flex-wrap:wrap}
+#form-desp .rad{min-width:calc(50% - 4px)}
+@media(max-width:560px){.desp-cat{grid-template-columns:1fr 90px}.desp-cat .desp-barra{grid-column:1/-1;grid-row:2}.desp-cat small{display:none}}
+[data-tema="escuro"] .desp-mes input{background:#15100D;border-color:rgba(255,255,255,.16)}

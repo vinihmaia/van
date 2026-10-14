@@ -206,6 +206,19 @@
       </div>
       <p class="legenda"><span><i class="d"></i>Pago em dinheiro (D)</span><span><i class="p"></i>Pago no Pix (P)</span><span><i class="a"></i>Atrasado</span><span><i></i>A vencer</span></p>
       <div class="tabela"><table class="fin"><thead><tr><th>Contrato</th><th>Jan</th><th>Fev</th><th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th><th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th><th>Pagos</th></tr></thead><tbody id="tab-fin"></tbody></table></div>
+
+      <!-- ===== DESPESAS E LUCRO (despesas.js) ===== -->
+      <div class="secao"><h2>Despesas e lucro</h2><div class="acts"><button class="btn ghost sm" id="desp-exportar" type="button">Exportar despesas</button><button class="btn sm" id="desp-nova" type="button">+ Lançar despesa</button></div></div>
+      <p class="sub" style="margin:-4px 0 10px">Conta pelo dia em que o dinheiro entrou ou saiu, como um extrato. Vale para a van toda (manhã e tarde juntas).</p>
+      <div class="filtros"><label class="desp-mes">Mês <input type="month" id="desp-mes"></label></div>
+      <div class="aviso-venc" id="desp-aviso" hidden></div>
+      <div class="stats">
+        <div class="stat"><div class="lbl">Entrou no mês</div><b class="ok" id="desp-entrou">R$ 0,00</b><small>mensalidades pagas</small></div>
+        <div class="stat"><div class="lbl">Saiu no mês</div><b class="warn" id="desp-saiu">R$ 0,00</b><small id="desp-qtd"></small></div>
+        <div class="stat"><div class="lbl">Sobrou</div><b id="desp-sobrou">R$ 0,00</b><small id="desp-sobrou-ano"></small></div>
+      </div>
+      <div class="card desp-cats" id="desp-cats" hidden></div>
+      <div class="tabela"><table><thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Forma</th><th>Valor</th><th>Lançado por</th><th></th></tr></thead><tbody id="tab-desp"></tbody></table></div>
     </section>
 
     <section class="screen" id="tela-responsaveis">
@@ -235,7 +248,7 @@
       <p><b>Quem cuida dos seus dados:</b> Van Escolar Tia Patrícia e Tio Vitor.</p>
       <p><b>Quais dados guardamos:</b> nome, CPF, telefone e e-mail do responsável; nome, série e data de nascimento da criança; endereço de embarque; as informações de saúde, alergias, contatos de emergência e pessoas autorizadas a buscar a criança, informadas pelo responsável conforme o contrato; e, na assinatura, a data e hora, o endereço de rede (IP) e a confirmação do código enviado por e-mail.</p>
       <p><b>Para que usamos:</b> para formalizar e cumprir o contrato de transporte escolar, controlar as mensalidades e comprovar a assinatura. As informações de saúde e os contatos de emergência são usados só para cuidar da criança durante o transporte e agir rápido numa emergência, e ficam visíveis apenas para a equipe da van.</p>
-      <p><b>Com quem compartilhamos:</b> não vendemos seus dados nem usamos para propaganda. Usamos serviços de tecnologia para guardar as informações e enviar e-mails (Supabase, Resend e Vercel). Para organizar o trajeto da van, o endereço de embarque é localizado em serviços de mapas e rotas (OpenStreetMap, Google Maps e Waze).</p>
+      <p><b>Com quem compartilhamos:</b> não vendemos seus dados nem usamos para propaganda. Usamos serviços de tecnologia para guardar as informações e enviar e-mails (Supabase, Resend e Vercel). Para organizar o trajeto da van, o endereço de embarque é localizado em serviços de mapas e rotas (OpenStreetMap, OSRM, Google Maps e Waze).</p>
       <p><b>Por quanto tempo:</b> durante o contrato e, depois do fim, pelo prazo exigido por lei, para comprovação e obrigações legais.</p>
       <p><b>Seus direitos:</b> você pode pedir para ver, corrigir ou apagar seus dados pelo WhatsApp <a href="https://wa.me/5511996929358" target="_blank" rel="noopener">(11) 99692-9358</a> ou pelo e-mail <a href="mailto:tiapaty_2012@hotmail.com">tiapaty_2012@hotmail.com</a>.</p>
     </details>
@@ -360,9 +373,30 @@
   </div>
 </div>
 
+<!-- ===== JANELA: LANÇAR DESPESA ===== -->
+<div class="modal-fundo" id="modal-desp" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="desp-titulo">
+    <h2 id="desp-titulo">Lançar despesa</h2>
+    <p class="sub">Combustível, pedágio, manutenção, parcela da van, salário…</p>
+    <form id="form-desp">
+      <label class="campo">Tipo<select name="categoria" required></select></label>
+      <label class="campo" style="margin-top:12px">Valor (R$)<input name="valor" type="number" min="0.01" step="0.01" inputmode="decimal" required></label>
+      <label class="campo" style="margin-top:12px">Data<input name="data" type="date" required></label>
+      <label class="campo" style="margin-top:12px">Descrição (opcional)<input name="descricao" maxlength="120" placeholder="Ex.: troca de óleo"></label>
+      <span class="campo" style="margin-top:12px">Forma de pagamento</span>
+      <div class="rads"><label class="rad"><input type="radio" name="forma" value="dinheiro">Dinheiro</label><label class="rad"><input type="radio" name="forma" value="pix">Pix</label><label class="rad"><input type="radio" name="forma" value="cartao">Cartão</label><label class="rad"><input type="radio" name="forma" value="boleto">Boleto</label></div>
+      <p class="erro" id="desp-erro"></p>
+      <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn" type="submit" id="desp-salvar">Salvar</button></div>
+    </form>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
+<script src="despesas.js"></script>
+<script src="documentos-aviso.js"></script>
+<script src="extras.js"></script>
 </body>
 </html>

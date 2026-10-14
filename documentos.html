@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script>/* Tema escuro (mesma escolha do painel) */try{var t=localStorage.getItem('van-tema')||'auto';if(t==='escuro'||(t==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-tema','escuro');}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Van PV · Documentos</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0A0608">
+<link rel="stylesheet" href="style.css">
+<style>
+[hidden]{display:none!important}
+.dc{max-width:760px;margin:0 auto;padding:16px 14px 90px}
+.voltar{color:rgba(255,248,242,.85);text-decoration:none;font-size:14px;font-weight:500}
+.voltar:hover{color:#fff}
+.dc-cab{text-align:right;color:#fff;line-height:1.3}
+.dc-cab b{display:block;font-size:15px}
+.dc-cab span{font-size:12.5px;color:rgba(255,248,242,.7)}
+.alerta{background:var(--warnbg);color:var(--warntx);border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:10px;line-height:1.5}
+.alerta.erro{background:var(--redbg);color:var(--redtx)}
+.alerta a{color:inherit;font-weight:600}
+.dc-resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 14px}
+.dc-num{background:var(--card);border-radius:14px;padding:12px 8px;text-align:center}
+.dc-num b{display:block;font-size:24px;letter-spacing:-.02em}
+.dc-num span{font-size:12px;color:var(--mu2)}
+.dc-num.vencido b{color:var(--red)}
+.dc-num.breve b{color:var(--warn)}
+.dc-num.ok b{color:var(--ok)}
+.dc-topo{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 2px 12px}
+.dc-lista{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.dc-item{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--ok);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:start}
+.dc-item.breve{border-left-color:var(--warn)}
+.dc-item.vencido{border-left-color:var(--red)}
+.dc-tipo{display:block;font-size:16px}
+.dc-sub{display:block;font-size:13px;color:var(--mu2);margin-top:3px;line-height:1.4}
+.dc-quando{font-size:12.5px;font-weight:700;white-space:nowrap;padding:4px 10px;border-radius:999px;background:var(--okbg);color:var(--oktx)}
+.dc-item.breve .dc-quando{background:var(--warnbg);color:var(--warntx)}
+.dc-item.vencido .dc-quando{background:var(--redbg);color:var(--redtx)}
+.dc-acoes{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.dc-vazio{background:var(--card);border-radius:14px;padding:28px;text-align:center;color:var(--mu2);font-size:14px;line-height:1.5}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.ok:hover{background:#178A66}
+#doc-apagar{margin-right:auto}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topin">
+    <a class="voltar" href="index.html">← Painel</a>
+    <div class="dc-cab"><b>Documentos da van</b><span>Aviso antes de vencer</span></div>
+  </div>
+</header>
+
+<main class="dc">
+  <div class="alerta" id="aviso-login" hidden></div>
+  <div id="conteudo" hidden>
+    <div id="dc-alertas"></div>
+    <div class="dc-resumo" id="dc-resumo"></div>
+    <div class="dc-topo"><h2>Todos os documentos</h2><button class="btn" id="dc-novo" type="button">+ Adicionar</button></div>
+    <ul class="dc-lista" id="dc-lista"></ul>
+    <p class="sub" style="margin-top:16px;line-height:1.5">Quando renovar um documento, toque em "✓ Renovei" e coloque a nova data de vencimento. O aviso some sozinho.</p>
+  </div>
+</main>
+
+<!-- Janela: adicionar / editar / renovar -->
+<div class="modal-fundo" id="modal-doc" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="doc-titulo">
+    <h2 id="doc-titulo">Adicionar documento</h2>
+    <div class="alerta" id="doc-dica" hidden style="margin-top:12px"></div>
+    <form id="form-doc">
+      <label class="campo" style="margin-top:12px">Documento<select name="tipo" required></select></label>
+      <label class="campo" style="margin-top:12px">De quem / qual (opcional)<input name="descricao" maxlength="80" placeholder="Ex.: CNH do Tio Vitor"></label>
+      <label class="campo" style="margin-top:12px">Número (opcional)<input name="numero" maxlength="40"></label>
+      <label class="campo" style="margin-top:12px">Vence em<input name="vencimento" type="date" required></label>
+      <label class="campo" style="margin-top:12px">Avisar quantos dias antes<select name="avisar_dias"><option value="15">15 dias</option><option value="30">30 dias</option><option value="45">45 dias</option><option value="60">60 dias</option><option value="90">90 dias</option></select></label>
+      <label class="campo" style="margin-top:12px">Observações (opcional)<textarea name="obs" maxlength="300" placeholder="Ex.: agendar com 2 semanas de antecedência" style="min-height:70px"></textarea></label>
+      <p class="erro" id="doc-erro"></p>
+      <div class="facts"><button class="link" id="doc-apagar" type="button" hidden>Apagar</button><button class="btn ghost" id="doc-fechar" type="button">Fechar</button><button class="btn" id="doc-salvar" type="submit">Salvar</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="documentos.js"></script>
+</body>
+</html>

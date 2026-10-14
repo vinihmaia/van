@@ -1,17 +1,18 @@
-/* =================== VAN PV · roteiro da van (versão simples) ===================
+/* =================== VAN PV · roteiro da van ===================
    Página separada do painel: se algo der errado aqui, o painel continua funcionando.
    - Cada casa é marcada UMA vez no mapa, por uma pessoa (o sistema sugere, a pessoa confere).
    - A melhor ordem das paradas é calculada sozinha (serviço OSRM, com plano B).
    - Os tios tocam "Embarcou"/"Entregue" em cada parada; a próxima fica destacada.
-     Essas marcações ficam só no celular e começam do zero todo dia. */
+     As marcações vão para o banco (tabela roteiro_marcas) e aparecem nos dois celulares.
+     Sem internet, ficam guardadas no aparelho e são enviadas quando o sinal voltar. */
 
 /* ---------- CONFIGURAÇÃO ----------
-   Se você já tinha preenchido estas linhas no roteiro.js antigo, copie os mesmos valores para cá.
    Para pegar as coordenadas: Google Maps no computador → botão direito em cima do portão →
-   clique nos números do topo do menu (eles são copiados) → cole entre as aspas. */
-const COORD_SAIDA = '-23.5xxxx, -46.8xxxx';    /* portão da garagem em Jandira */
-const COORD_CHEGADA = '';  /* portão da Fundação Bradesco, Cidade de Deus */
-const NOME_SAIDA = 'Garagem · Jandira (Fátima)';
+   clique nos números do topo do menu (eles são copiados) → cole entre as aspas.
+   Formato aceito: '-23.12345, -46.12345'. Qualquer outra coisa conta como "não configurado". */
+const COORD_SAIDA = '-23.5398781, -46.9054604';  /* APROXIMADO: ponto da rua (CEP 06604-280), ajustar para o portão do nº 86 */
+const COORD_CHEGADA = '-23.5456186, -46.7715782'; /* Fundação Bradesco, Cidade de Deus */
+const NOME_SAIDA = 'Garagem · Vila Santa Rosa, Jandira';
 const NOME_CHEGADA = 'Fundação Bradesco · Cidade de Deus';
 const MIN_POR_PARADA = 2;  /* minutos parados em cada casa (para a estimativa de horário) */
 /* Região da van: Jandira, Barueri, Carapicuíba, Itapevi, Cotia, Embu das Artes, Taboão e Osasco */
@@ -37,10 +38,11 @@ function telLink(tel) {
   if (n.length === 10 || n.length === 11) n = '55' + n;
   return /^55\d{10,11}$/.test(n) ? 'tel:+' + n : (n ? 'tel:' + n : '');
 }
-/* Lê "-23.12345, -46.12345" (do jeito que o Google Maps copia) */
+/* Lê "-23.12345, -46.12345" (do jeito que o Google Maps copia).
+   Vazio, "xxxx" ou texto contam como "não configurado" (nunca vira um ponto inventado). */
 function lerCoordenadas(txt) {
-  const n = String(txt || '').match(/-?\d+(?:\.\d+)?/g);
-  return n && n.length >= 2 ? { lat: Number(n[0]), lng: Number(n[1]) } : { lat: null, lng: null };
+  const m = String(txt || '').match(/^\s*(-?\d{1,3}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)\s*$/);
+  return m ? { lat: Number(m[1]), lng: Number(m[2]) } : { lat: null, lng: null };
 }
 const PARTIDA = { nome: NOME_SAIDA, curto: 'garagem', icone: '🚐', ...lerCoordenadas(COORD_SAIDA) };
 const CHEGADA = { nome: NOME_CHEGADA, curto: 'escola', icone: '🏫', ...lerCoordenadas(COORD_CHEGADA) };
@@ -64,18 +66,97 @@ function lerPref(chave, padrao, validos) { try { const v = localStorage.getItem(
 function guardarPref(chave, v) { try { localStorage.setItem(chave, v); } catch (e) { /* sem armazenamento */ } }
 let turma = lerPref('van-rt-turma', 'Manhã', ['Manhã', 'Tarde']);
 let sentido = lerPref('van-rt-sentido', 'ida', ['ida', 'volta']);
-let contratos = [], temSaude = true, mapa = null, camadas = null, ultimaRota = null, vezCalculo = 0;
+let contratos = [], temSaude = true, mapa = null, camadas = null, ultimaRota = null, vezCalculo = 0, usuarioId = null;
 
-/* ---------- marcações do dia ("Embarcou", "Faltou"): só neste aparelho ---------- */
-const chaveMarcas = () => 'van-marcas-' + hojeISO() + '-' + turma + '-' + sentido;
-function lerMarcas() { try { return JSON.parse(localStorage.getItem(chaveMarcas()) || '{}') || {}; } catch (e) { return {}; } }
-function salvarMarcas(m) { try { localStorage.setItem(chaveMarcas(), JSON.stringify(m)); } catch (e) { /* sem armazenamento */ } }
-function limparMarcasAntigas() {
-  try { Object.keys(localStorage).filter(k => k.startsWith('van-marcas-') && !k.startsWith('van-marcas-' + hojeISO())).forEach(k => localStorage.removeItem(k)); } catch (e) { /* nada */ }
+/* ---------- gaveta do aparelho (localStorage) ---------- */
+function lerJSON(k, padrao) { try { return JSON.parse(localStorage.getItem(k) || 'null') || padrao; } catch (e) { return padrao; } }
+function gravarJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } }
+function chavesGuardadas(prefixo) { try { return Object.keys(localStorage).filter(k => k.startsWith(prefixo)); } catch (e) { return []; } }
+
+/* ---------- marcações do dia ("Embarcou", "Faltou") ----------
+   O banco é quem manda; o aparelho guarda uma cópia (para mostrar na hora)
+   e uma fila do que ainda não conseguiu enviar (para quando o sinal cair). */
+const sufixoDia = () => hojeISO() + '-' + turma + '-' + sentido;
+const chaveMarcas = () => 'van-marcas-' + sufixoDia();
+const chavePend = () => 'van-pend-' + sufixoDia();
+const lerMarcas = () => lerJSON(chaveMarcas(), {});
+const salvarMarcas = m => gravarJSON(chaveMarcas(), m);
+const lerPendentes = () => lerJSON(chavePend(), {});   /* { parada: {s, h} } ou { parada: null } (= desfazer) */
+const salvarPendentes = p => gravarJSON(chavePend(), p);
+let semBancoMarcas = false; /* true se a tabela roteiro_marcas ainda não existe: segue só no aparelho */
+const tabelaFalta = e => /roteiro_marcas|does not exist|schema cache|relation/i.test((e && e.message) || '');
+
+function limparGuardadosAntigos() {
+  const hoje = 'van-marcas-' + hojeISO();
+  chavesGuardadas('van-marcas-').filter(k => !k.startsWith(hoje)).forEach(k => localStorage.removeItem(k));
+  /* Rotas guardadas no formato antigo levavam nomes e saúde das crianças: apaga */
+  chavesGuardadas('van-rota-').forEach(k => {
+    const g = lerJSON(k, null);
+    if (!g || !g.rota || !Array.isArray(g.rota.ordem) || g.rota.ordem.some(x => typeof x !== 'string')) localStorage.removeItem(k);
+  });
 }
 const chaveParada = p => p.criancas.map(c => c.id).sort().join('+');
 const nomesParada = p => p.criancas.map(c => c.crianca).join(' + ');
 function hojeExtenso() { const t = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }); return t.charAt(0).toUpperCase() + t.slice(1); }
+
+/* Busca no banco as marcações de hoje desta turma/sentido (e respeita o que ainda está na fila) */
+async function baixarMarcas() {
+  if (!sb || semBancoMarcas) return;
+  const { data, error } = await sb.from('roteiro_marcas').select('parada, situacao, hora').eq('dia', hojeISO()).eq('turma', turma).eq('sentido', sentido);
+  if (error) { if (tabelaFalta(error)) semBancoMarcas = true; return; } /* sem internet: fica com a cópia do aparelho */
+  const m = {};
+  data.forEach(x => { m[x.parada] = { s: x.situacao, h: x.hora || '' }; });
+  Object.entries(lerPendentes()).forEach(([k, v]) => { if (v) m[k] = v; else delete m[k]; });
+  salvarMarcas(m);
+}
+
+/* Envia a fila (de qualquer dia/turma/sentido que tenha ficado para trás) */
+let enviando = false, enviarDeNovo = false;
+async function enviarPendentes() {
+  if (!sb || semBancoMarcas) return;
+  if (enviando) { enviarDeNovo = true; return; }
+  enviando = true;
+  try {
+    for (const k of chavesGuardadas('van-pend-')) {
+      const s = k.slice('van-pend-'.length), dia = s.slice(0, 10), [tur, sen] = s.slice(11).split('-');
+      for (const [parada, v] of Object.entries(lerJSON(k, {}))) {
+        const onde = { dia, turma: tur, sentido: sen, parada };
+        const r = v
+          ? await sb.from('roteiro_marcas').upsert({ ...onde, situacao: v.s, hora: v.h, marcado_por: usuarioId, marcado_em: new Date().toISOString() })
+          : await sb.from('roteiro_marcas').delete().match(onde);
+        if (r.error) { if (tabelaFalta(r.error)) semBancoMarcas = true; return; } /* sem sinal: tenta de novo depois */
+        const atual = lerJSON(k, {});
+        if (JSON.stringify(atual[parada]) === JSON.stringify(v)) delete atual[parada]; /* só tira da fila se ninguém mexeu de novo */
+        if (Object.keys(atual).length) gravarJSON(k, atual); else localStorage.removeItem(k);
+      }
+    }
+  } finally {
+    enviando = false;
+    if (enviarDeNovo) { enviarDeNovo = false; enviarPendentes(); }
+  }
+}
+
+/* Mantém os dois celulares iguais: tempo real + conferência a cada minuto */
+let canal = null, tRecarga = null;
+async function atualizarDoBanco() { await baixarMarcas(); if (ultimaRota) desenhar(ultimaRota, false); }
+async function sincronizar() {
+  if ($('conteudo').hidden) return;
+  await enviarPendentes();
+  await atualizarDoBanco();
+}
+function ouvirMarcas() {
+  if (!sb || semBancoMarcas || canal) return;
+  try {
+    canal = sb.channel('roteiro-marcas')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'roteiro_marcas' }, () => {
+        clearTimeout(tRecarga); tRecarga = setTimeout(atualizarDoBanco, 400);
+      })
+      .subscribe();
+  } catch (e) { canal = null; /* sem tempo real: a conferência a cada minuto continua valendo */ }
+}
+addEventListener('online', sincronizar);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sincronizar(); });
+setInterval(sincronizar, 60000);
 
 /* ---------- início: confere o login (o mesmo do painel) ---------- */
 function avisar(html) { const a = $('aviso-login'); a.innerHTML = html; a.hidden = false; }
@@ -85,7 +166,7 @@ function marcarEscolhas() {
 }
 async function iniciar() {
   $('rt-data').textContent = hojeExtenso();
-  limparMarcasAntigas();
+  limparGuardadosAntigos();
   marcarEscolhas();
   const avisoArquivo = ABERTO_DO_COMPUTADOR ? esc(MSG_ARQUIVO) + '<br><br>' : '';
   if (!sb || !window.L) { avisar(avisoArquivo + 'Não consegui carregar o sistema. Confira a internet e abra a página de novo.'); return; }
@@ -94,9 +175,12 @@ async function iniciar() {
   if (!user) { avisar(avisoArquivo + 'Você não está logado neste celular. <a href="index.html">Entre no painel</a> e depois volte para o roteiro.'); return; }
   const { data: acesso, error } = await sb.from('usuarios_painel').select('id').eq('id', user.id).maybeSingle();
   if (error || !acesso) { avisar('Este login não tem acesso ao roteiro.'); return; }
+  usuarioId = user.id;
   $('conteudo').hidden = false;
   carregarSaida();
+  await enviarPendentes();
   await carregar();
+  ouvirMarcas();
 }
 
 /* ---------- dados: só contratos ASSINADOS entram no roteiro ---------- */
@@ -119,6 +203,7 @@ async function carregar() {
       resp: resp.nome || '', tel: resp.telefone || ''
     };
   });
+  await baixarMarcas();
   await calcular();
 }
 
@@ -143,7 +228,20 @@ function agrupar(lista) {
   });
   return [...grupos.values()];
 }
-function lerGuardada(chave) { try { return JSON.parse(localStorage.getItem(chave) || 'null'); } catch (e) { return null; } }
+
+/* ---------- rota guardada no aparelho (plano B) ----------
+   Guarda só a ORDEM das paradas (códigos), nunca nomes, saúde ou telefones.
+   Na hora de usar, remonta com os dados que acabaram de vir do banco. */
+function rotaParaGuardar(rota) {
+  const ult = rota.ordem.length - 1;
+  return { ...rota, ordem: rota.ordem.map((p, i) => i === 0 ? '@ini' : i === ult ? '@fim' : chaveParada(p)) };
+}
+function restaurarRota(leve, ini, paradas, fim) {
+  if (!leve || !Array.isArray(leve.ordem)) return null;
+  const porChave = new Map(paradas.map(p => [chaveParada(p), p]));
+  const ordem = leve.ordem.map(k => k === '@ini' ? ini : k === '@fim' ? fim : porChave.get(k));
+  return ordem.some(x => !x) ? null : { ...leve, ordem };
+}
 
 /* ---------- cálculo da rota ---------- */
 async function calcular() {
@@ -153,6 +251,7 @@ async function calcular() {
   const comPonto = daTurma.filter(temPonto), semPonto = daTurma.filter(c => !temPonto(c));
   renderFaltam(semPonto);
   const alertas = [];
+  if (semBancoMarcas) alertas.push({ texto: 'As marcações de "Embarcou/Entregue" estão ficando só neste celular: falta criar a tabela roteiro_marcas no banco.' });
   if (semPonto.length) alertas.push({ texto: `${semPonto.length === 1 ? '1 criança ainda não está' : semPonto.length + ' crianças ainda não estão'} no roteiro: falta marcar a casa no mapa (veja no fim da página).` });
 
   /* Trava: saída e chegada precisam existir e cair dentro da região da van */
@@ -177,11 +276,12 @@ async function calcular() {
   let rota;
   try {
     rota = await rotaOSRM(ini, paradas, fim);
-    try { localStorage.setItem(chave, JSON.stringify({ assinatura, rota })); } catch (e) { /* sem espaço: segue sem guardar */ }
+    gravarJSON(chave, { assinatura, rota: rotaParaGuardar(rota) });
   } catch (e) {
-    const guardada = lerGuardada(chave);
-    if (guardada && guardada.assinatura === assinatura) {
-      rota = guardada.rota;
+    const guardada = lerJSON(chave, null);
+    const restaurada = guardada && guardada.assinatura === assinatura ? restaurarRota(guardada.rota, ini, paradas, fim) : null;
+    if (restaurada) {
+      rota = restaurada;
       alertas.push({ texto: 'O serviço de rotas não respondeu agora. Mostrando a última rota calculada com estas mesmas crianças.' });
     } else {
       rota = rotaLocal(ini, paradas, fim);
@@ -309,9 +409,11 @@ function desenhar(rota, ajustarMapa) {
     return `<a class="btn duas-linhas ${i === 0 ? 'or grande' : 'ghost'}" href="${esc(l.url)}" target="_blank" rel="noopener"><span>${titulo}</span>${partes.length > 1 ? `<small>${esc(l.texto)}</small>` : ''}</a>`;
   }).join('') + (partes.length > 1 ? '<p class="sub">O Google Maps aceita até 9 paradas de cada vez. Quando terminar uma parte, toque na próxima.</p>' : '');
 
-  /* Progresso */
+  /* Progresso (+ quantas marcações ainda esperam internet) */
   const total = ultimo - 1, feitas = ordem.slice(1, -1).filter(p => marcas[chaveParada(p)]).length;
-  $('rt-progresso').textContent = feitas === total ? 'Todas as paradas feitas! 🎉' : `${feitas} de ${total} paradas feitas` + (proxima > 0 ? ' · próxima: ' + nomesParada(ordem[proxima]) : '');
+  const naFila = Object.keys(lerPendentes()).length;
+  $('rt-progresso').textContent = (feitas === total ? 'Todas as paradas feitas! 🎉' : `${feitas} de ${total} paradas feitas` + (proxima > 0 ? ' · próxima: ' + nomesParada(ordem[proxima]) : '')) +
+    (naFila ? ` · ⏳ ${naFila} esperando internet` : '');
   $('rt-resumo').hidden = false;
 
   /* Mapa: laranja = próxima, verde = já feita */
@@ -346,11 +448,12 @@ function cartao(p, i, { ultimo, hora, marcas, proxima }) {
     ? `<span class="pc-selo ${m.s === 'ok' ? 'ok' : 'falta'}">${m.s === 'ok' ? '✓ ' + TXT[sentido].ok : TXT[sentido].falta}${m.h ? ' · ' + esc(m.h) : ''}</span>`
     : (i === proxima ? '<span class="pc-selo prox">PRÓXIMA</span>' : '');
   const botoes = m
-    ? `<div class="pc-botoes"><button class="btn ghost" data-desfazer="${chave}" type="button">Desfazer</button></div>`
+    ? `<div class="pc-botoes"><button class="btn ghost" data-desfazer="${esc(chave)}" type="button">Desfazer</button></div>`
     : `<div class="pc-botoes"><a class="btn ghost" href="https://waze.com/ul?ll=${p.lat},${p.lng}&amp;navigate=yes" target="_blank" rel="noopener">Waze</a>` +
       (tel ? `<a class="btn ghost" href="${tel}">Ligar</a>` : '') +
-      `<button class="btn ok" data-marcar="${chave}" type="button">✓ ${TXT[sentido].ok}</button></div>` +
-      `<div class="pc-mais"><button class="link" data-faltou="${chave}" type="button">${TXT[sentido].falta}</button> · <button class="link" data-local="${c0.id}" type="button">Corrigir local no mapa</button></div>`;
+      `<button class="btn ok" data-marcar="${esc(chave)}" type="button">✓ ${TXT[sentido].ok}</button></div>` +
+      /* data-local leva os códigos de TODAS as crianças da parada (irmãos mudam juntos) */
+      `<div class="pc-mais"><button class="link" data-faltou="${esc(chave)}" type="button">${TXT[sentido].falta}</button> · <button class="link" data-local="${esc(chave)}" type="button">Corrigir local no mapa</button></div>`;
   return `<li class="pc ${estado}"><span class="pc-num">${i}</span><div class="pc-info">${horaHtml}<b class="pc-nome">${p.criancas.map(c => esc(c.crianca)).join(' + ')}</b><span class="pc-sub">${esc(end)}</span><span class="pc-sub">${resps}</span>${avisos}</div>${selo}${botoes}</li>`;
 }
 
@@ -360,18 +463,24 @@ function renderFaltam(lista) {
   $('rt-faltam-lista').innerHTML = lista.sort((a, b) => porNome(a.crianca, b.crianca)).map(c => {
     const end = c.endereco ? c.endereco + (c.bairro ? ', ' + c.bairro : '') : '';
     return `<li class="pc"><span class="pc-num falta-marcar">!</span><div class="pc-info"><b class="pc-nome">${esc(c.crianca)}</b><span class="pc-sub">${esc(end || 'Sem endereço: preencha pela ficha no painel')}</span></div>` +
-      (c.endereco ? `<div class="pc-botoes"><button class="btn" data-local="${c.id}" type="button">Marcar a casa no mapa</button></div>` : '') + '</li>';
+      (c.endereco ? `<div class="pc-botoes"><button class="btn" data-local="${esc(c.id)}" type="button">Marcar a casa no mapa</button></div>` : '') + '</li>';
   }).join('');
 }
 
-/* ---------- marcar "Embarcou" / "Faltou" ---------- */
-function marcar(chave, s) {
+/* ---------- marcar "Embarcou" / "Faltou" ----------
+   1º aparece na tela na hora; 2º entra na fila; 3º a fila é enviada ao banco. */
+function registrar(chave, valor) {
   const m = lerMarcas();
-  if (s) m[chave] = { s, h: horaAgora() }; else delete m[chave];
+  if (valor) m[chave] = valor; else delete m[chave];
   salvarMarcas(m);
+  if (!semBancoMarcas) { const p = lerPendentes(); p[chave] = valor; salvarPendentes(p); }
+}
+function marcar(chave, s) {
+  registrar(chave, s ? { s, h: horaAgora() } : null);
   if (!ultimaRota) return;
   desenhar(ultimaRota, false);
   if (s) { const prox = document.querySelector('.pc.proxima'); if (prox) prox.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  enviarPendentes().then(() => { if (ultimaRota) desenhar(ultimaRota, false); });
 }
 $('rt-lista').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -381,26 +490,29 @@ $('rt-lista').addEventListener('click', e => {
 });
 
 /* ---------- botões da página ---------- */
+async function trocouEscolha() { marcarEscolhas(); carregarSaida(); await baixarMarcas(); calcular(); }
 document.querySelectorAll('.seg-btn[data-turma]').forEach(b => b.addEventListener('click', () => {
   if (turma === b.dataset.turma) return;
-  turma = b.dataset.turma; guardarPref('van-rt-turma', turma); marcarEscolhas(); carregarSaida(); calcular();
+  turma = b.dataset.turma; guardarPref('van-rt-turma', turma); trocouEscolha();
 }));
 document.querySelectorAll('.seg-btn[data-sentido]').forEach(b => b.addEventListener('click', () => {
   if (sentido === b.dataset.sentido) return;
-  sentido = b.dataset.sentido; guardarPref('van-rt-sentido', sentido); marcarEscolhas(); carregarSaida(); calcular();
+  sentido = b.dataset.sentido; guardarPref('van-rt-sentido', sentido); trocouEscolha();
 }));
 $('rt-saida').addEventListener('change', () => { guardarPref(chaveSaida(), $('rt-saida').value); if (ultimaRota) desenhar(ultimaRota, false); });
 $('rt-calcular').addEventListener('click', calcular);
 $('rt-imprimir').addEventListener('click', () => window.print());
 $('rt-recomecar').addEventListener('click', () => {
-  if (!confirm('Desmarcar todas as paradas desta rota de hoje?')) return;
-  salvarMarcas({}); if (ultimaRota) desenhar(ultimaRota, false);
+  if (!confirm('Desmarcar todas as paradas desta rota de hoje? Isso vale para os celulares de toda a equipe.')) return;
+  Object.keys(lerMarcas()).forEach(k => registrar(k, null));
+  if (ultimaRota) desenhar(ultimaRota, false);
+  enviarPendentes().then(() => { if (ultimaRota) desenhar(ultimaRota, false); });
 });
 document.addEventListener('click', e => { const b = e.target.closest('[data-local]'); if (b) abrirLocal(b.dataset.local); });
 
 /* ---------- marcar a casa no mapa (feito uma vez por criança) ---------- */
-let mapaLocal = null, alfinete = null, localAtual = null;
-function fecharLocal() { $('modal-local').hidden = true; document.body.classList.remove('travado'); localAtual = null; }
+let mapaLocal = null, alfinete = null, localAtual = null, localIds = [];
+function fecharLocal() { $('modal-local').hidden = true; document.body.classList.remove('travado'); localAtual = null; localIds = []; }
 $('local-fechar').addEventListener('click', fecharLocal);
 $('modal-local').addEventListener('click', e => { if (e.target === $('modal-local')) fecharLocal(); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modal-local').hidden) fecharLocal(); });
@@ -423,10 +535,13 @@ async function geocodificar(c) {
   }
   return pos;
 }
-async function abrirLocal(id) {
-  const c = contratos.find(x => x.id === id); if (!c) return;
-  localAtual = c;
-  $('local-sub').textContent = c.crianca + ' · ' + c.endereco + (c.bairro ? ', ' + c.bairro : '');
+/* ids = um código ou vários separados por "+" (irmãos da mesma parada) */
+async function abrirLocal(ids) {
+  const lista = String(ids || '').split('+').filter(Boolean);
+  const c = contratos.find(x => x.id === lista[0]); if (!c) return;
+  localIds = lista; localAtual = c;
+  const nomes = lista.map(id => (contratos.find(x => x.id === id) || {}).crianca).filter(Boolean).join(' + ');
+  $('local-sub').textContent = nomes + ' · ' + c.endereco + (c.bairro ? ', ' + c.bairro : '');
   $('local-erro').textContent = '';
   $('local-aviso').textContent = 'Procurando o endereço…';
   $('local-salvar').disabled = true;
@@ -452,14 +567,15 @@ async function abrirLocal(id) {
   $('local-salvar').disabled = false;
 }
 $('local-salvar').addEventListener('click', async () => {
-  if (!localAtual) return;
-  const { lat, lng } = alfinete.getLatLng(), btn = $('local-salvar'), id = localAtual.id;
+  if (!localAtual || !localIds.length) return;
+  const { lat, lng } = alfinete.getLatLng(), btn = $('local-salvar'), ids = localIds.slice();
   btn.disabled = true;
-  const { data, error } = await sb.from('contratos').update({ lat, lng }).eq('id', id).select('id');
+  const { data, error } = await sb.from('contratos').update({ lat, lng }).in('id', ids).select('id');
   btn.disabled = false;
   if (error) { $('local-erro').textContent = /lat|lng/i.test(error.message) ? 'O banco ainda não tem as colunas do roteiro. Rode o SQL do roteiro.' : 'Não consegui salvar: ' + error.message; return; }
   if (!data.length) { $('local-erro').textContent = 'O banco não deixou salvar (falta permissão).'; return; }
-  fecharLocal(); toast('Local confirmado.');
+  fecharLocal();
+  toast(data.length < ids.length ? 'Atenção: só parte das crianças desta parada foi atualizada.' : 'Local confirmado.');
   await carregar();
 });
 

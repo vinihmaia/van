@@ -142,14 +142,15 @@ const CONTRATADA = {
   whatsapp: '(11) 99692-9358',
   email: 'tiapaty_2012@hotmail.com'
 };
-const MES_RESCISAO = '[MÊS]';     /* PREENCHER: 2º mês em que dá para desistir sem multa (ex.: 'fevereiro'). Mude também na Edge Function. */
 const REAJUSTE = 0.10;            /* 10% a cada 6 meses (vale de julho em diante) */
 const ESPERA_MIN = 3;             /* minutos que a van espera no ponto */
 const DIAS_ATRASO_RESCISAO = 60;  /* atraso no pagamento que permite encerrar o contrato */
 const DIAS_RENOVACAO = 30;        /* para garantir a vaga do ano seguinte, avisar até X dias antes do fim do contrato */
 const FORO = 'Osasco/SP';
 
-/* ---------- texto do contrato ---------- */
+/* ---------- texto do contrato ----------
+   ATENÇÃO: a versão que os pais assinam é montada na Edge Function "assinatura".
+   Qualquer mudança aqui precisa ser feita lá também. */
 function textoContrato(c, html) {
   const v = s => html ? '<strong>' + esc(s) + '</strong>' : String(s);
   const m1 = Number(c.mensalidade);                          /* janeiro a junho */
@@ -165,8 +166,8 @@ function textoContrato(c, html) {
     'Contrato que fazem entre si as partes acima identificadas para a prestação do serviço de transporte coletivo de estudantes porta a porta, sob o regime de fretamento, entre o endereço de embarque e a Fundação Bradesco (Cidade de Deus, Osasco), ida e volta, nos dias letivos, mediante as cláusulas e condições a seguir:', '',
 
     'Cláusula 1ª – VIGÊNCIA. O presente contrato terá validade de ' + v(fmtDia(c.inicio)) + ' a ' + v(fmtDia(c.fim)) + ' e poderá ser renovado para o ano seguinte, mediante assinatura de novo contrato, se houver interesse das partes.',
-    '§ 1º – Este contrato poderá ser rescindido por qualquer das partes durante o primeiro mês de sua assinatura ou durante o mês de ' + v(MES_RESCISAO) + ', sendo devido pelo CONTRATANTE somente o valor proporcional aos dias utilizados.',
-    '§ 2º – Fora desses períodos, o CONTRATANTE poderá interromper este contrato mediante o pagamento de multa no valor de 01 (uma) parcela mensal, subsequente à formalização por escrito da rescisão deste contrato.', '',
+    '§ 1º – Este contrato poderá ser rescindido por qualquer das partes nos 30 (trinta) dias seguintes à data de sua assinatura, sendo devido pelo CONTRATANTE somente o valor proporcional aos dias utilizados.',
+    '§ 2º – Fora desse período, o CONTRATANTE poderá interromper este contrato mediante o pagamento de multa no valor de 01 (uma) parcela mensal, subsequente à formalização por escrito da rescisão deste contrato.', '',
 
     'Cláusula 2ª – SEMESTRES. Para efeito de interpretação deste instrumento, considera-se como 1º semestre os meses de fevereiro a junho e como 2º semestre os meses de agosto a dezembro.', '',
 
@@ -745,6 +746,7 @@ function renderFinanceiro() {
   });
   const vazio = DB.contratos.some(c => c.status === 'assinado') ? 'Nenhum contrato neste filtro.' : 'Nenhum contrato assinado ainda. As mensalidades aparecem aqui depois da assinatura.';
   pegar('tab-fin').innerHTML = linhas.length ? linhas.join('') : `<tr><td colspan="14" class="vazio">${vazio}</td></tr>`;
+  if (window.renderDespesas) window.renderDespesas(); /* bloco de despesas (despesas.js) */
 }
 
 /* Cliques no financeiro */
@@ -1001,8 +1003,12 @@ formFicha.addEventListener('submit', async e => {
   if (n.turma !== c.turma) { const lotada = erroLotada(n.turma, c.id); if (lotada) { erro.textContent = lotada; return; } }
   /* Só grava as tabelas que mudaram */
   const passos = [];
-  if (n.turma !== c.turma || n.endereco !== c.endereco || n.bairro !== c.bairro)
-    passos.push(() => sb.from('contratos').update({ turma: n.turma, endereco: n.endereco, bairro: n.bairro }).eq('id', c.id).in('status', ['aguardando', 'assinado']).select('id'));
+  const mudouEndereco = n.endereco !== c.endereco || n.bairro !== c.bairro;
+  if (n.turma !== c.turma || mudouEndereco) {
+    const campos = { turma: n.turma, endereco: n.endereco, bairro: n.bairro };
+    if (mudouEndereco) { campos.lat = null; campos.lng = null; } /* a casa precisa ser marcada de novo no roteiro */
+    passos.push(() => sb.from('contratos').update(campos).eq('id', c.id).in('status', ['aguardando', 'assinado']).select('id'));
+  }
   const valorAntigo = campo => campo === 'desce_sozinho' ? !!k.desce_sozinho : k[campo];
   if (Object.keys(novaCrianca).some(campo => String(novaCrianca[campo] ?? '') !== String(valorAntigo(campo) ?? '')))
     passos.push(() => sb.from('criancas').update(novaCrianca).eq('id', k.id).select('id'));
@@ -1021,7 +1027,7 @@ formFicha.addEventListener('submit', async e => {
   if (falha) { erro.textContent = falha + (passos.length > 1 ? ' Parte das mudanças pode ter sido salva; confira depois de fechar.' : ''); return; }
   fecharModais();
   if (location.hash.startsWith('#contrato/')) telaDetalhe(c.id); else redesenharLista();
-  toast('Ficha atualizada.');
+  toast(mudouEndereco ? 'Ficha atualizada. Marque a casa nova no mapa do roteiro.' : 'Ficha atualizada.');
 });
 
 /* ---------- saúde e contatos (janela aberta pela aba Responsáveis e pela página do contrato) ---------- */
