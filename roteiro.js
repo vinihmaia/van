@@ -4,7 +4,9 @@
    - A melhor ordem das paradas é calculada sozinha (serviço OSRM, com plano B).
    - Os tios tocam "Embarcou"/"Entregue" em cada parada; a próxima fica destacada.
      As marcações vão para o banco (tabela roteiro_marcas) e aparecem nos dois celulares.
-     Sem internet, ficam guardadas no aparelho e são enviadas quando o sinal voltar. */
+     Sem internet, ficam guardadas no aparelho e são enviadas quando o sinal voltar.
+   - Mapa: satélite com nomes de ruas (padrão) ou mapa de ruas, botão "Onde estou",
+     "Próxima parada", "Rota inteira" e "Ampliar". */
 
 /* ---------- CONFIGURAÇÃO ----------
    Para pegar as coordenadas: Google Maps no computador → botão direito em cima do portão →
@@ -47,11 +49,19 @@ function lerCoordenadas(txt) {
 const PARTIDA = { nome: NOME_SAIDA, curto: 'garagem', icone: '🚐', ...lerCoordenadas(COORD_SAIDA) };
 const CHEGADA = { nome: NOME_CHEGADA, curto: 'escola', icone: '🏫', ...lerCoordenadas(COORD_CHEGADA) };
 
-/* ---------- fundo do mapa (OpenStreetMap) ----------
-   O OpenStreetMap exige saber de qual site vem cada pedaço do mapa (o "Referer").
-   O referrerPolicy abaixo garante que essa informação vá junto. */
-const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const OPC_TILES = { maxZoom: 19, referrerPolicy: 'strict-origin-when-cross-origin', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' };
+/* ---------- fundo do mapa ----------
+   "Satélite": fotos de satélite da Esri com os nomes de ruas e lugares por cima (sem chave, sem cadastro).
+   "Ruas": o mapa do OpenStreetMap (no visual escuro, as cores são invertidas pelo visual.css).
+   O OpenStreetMap exige saber de qual site vem cada pedaço do mapa (o "Referer"):
+   o referrerPolicy abaixo garante que essa informação vá junto. */
+const OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OPC_OSM = { maxZoom: 19, className: 'tiles-ruas', referrerPolicy: 'strict-origin-when-cross-origin', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' };
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+const SAT = ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const SAT_RUAS = ESRI + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}';
+const SAT_NOMES = ESRI + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+const OPC_SAT = { maxZoom: 20, maxNativeZoom: 19, attribution: 'Imagens &copy; Esri, Maxar, Earthstar Geographics' };
+const OPC_NOMES = { maxZoom: 20, maxNativeZoom: 19 };
 const ABERTO_DO_COMPUTADOR = location.protocol === 'file:';
 const MSG_ARQUIVO = 'Esta página foi aberta direto do arquivo no computador (o endereço começa com file://). Assim o mapa fica bloqueado. Abra o site publicado, pelo endereço que começa com https://.';
 
@@ -67,6 +77,32 @@ function guardarPref(chave, v) { try { localStorage.setItem(chave, v); } catch (
 let turma = lerPref('van-rt-turma', 'Manhã', ['Manhã', 'Tarde']);
 let sentido = lerPref('van-rt-sentido', 'ida', ['ida', 'volta']);
 let contratos = [], temSaude = true, mapa = null, camadas = null, ultimaRota = null, vezCalculo = 0, usuarioId = null;
+let marcadorProx = null, limitesRota = null;
+
+/* Põe o fundo escolhido no mapa e o botão "Satélite / Ruas" no canto (a escolha fica guardada no aparelho) */
+function fundoDoMapa(m) {
+  const fundos = {
+    satelite: L.layerGroup([L.tileLayer(SAT, OPC_SAT), L.tileLayer(SAT_RUAS, OPC_NOMES), L.tileLayer(SAT_NOMES, OPC_NOMES)]),
+    ruas: L.tileLayer(OSM, OPC_OSM)
+  };
+  let atual = lerPref('van-rt-fundo', 'satelite', ['satelite', 'ruas']);
+  fundos[atual].addTo(m);
+  const ctl = L.control({ position: 'topright' });
+  ctl.onAdd = () => {
+    const div = L.DomUtil.create('div', 'mapa-fundo');
+    div.innerHTML = '<button type="button" data-fundo="satelite">Satélite</button><button type="button" data-fundo="ruas">Ruas</button>';
+    L.DomEvent.disableClickPropagation(div);
+    const marcar = () => div.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.fundo === atual));
+    div.addEventListener('click', e => {
+      const b = e.target.closest('button[data-fundo]'); if (!b || b.dataset.fundo === atual) return;
+      m.removeLayer(fundos[atual]); atual = b.dataset.fundo; fundos[atual].addTo(m);
+      guardarPref('van-rt-fundo', atual); marcar();
+    });
+    marcar();
+    return div;
+  };
+  ctl.addTo(m);
+}
 
 /* ---------- gaveta do aparelho (localStorage) ---------- */
 function lerJSON(k, padrao) { try { return JSON.parse(localStorage.getItem(k) || 'null') || padrao; } catch (e) { return padrao; } }
@@ -212,7 +248,7 @@ function mostrarAlertas(lista) {
   $('rt-alertas').innerHTML = todos.map(a => `<div class="alerta${a.erro ? ' erro' : ''}">${esc(a.texto)}</div>`).join('');
 }
 function limparRota() {
-  ultimaRota = null;
+  ultimaRota = null; marcadorProx = null; limitesRota = null;
   $('rt-resumo').hidden = true; $('rt-mapa-caixa').hidden = true; $('rt-h2').hidden = true;
   $('rt-lista').innerHTML = '';
   if (camadas) camadas.clearLayers();
@@ -366,8 +402,75 @@ function linksGoogle(ordem) {
 function garantirMapa() {
   if (mapa) { mapa.invalidateSize(); return; }
   mapa = L.map('rt-mapa', { scrollWheelZoom: false }).setView(CENTRO_REGIAO, 12);
-  L.tileLayer(TILES, OPC_TILES).addTo(mapa);
+  fundoDoMapa(mapa);
   camadas = L.layerGroup().addTo(mapa);
+  botoesDoMapa();
+}
+
+/* Botões em cima do mapa: onde estou, próxima parada, rota inteira, ampliar */
+function botoesDoMapa() {
+  const ctl = L.control({ position: 'bottomleft' });
+  ctl.onAdd = () => {
+    const div = L.DomUtil.create('div', 'mapa-acoes');
+    div.innerHTML = '<button type="button" data-mapa="eu">📍 Onde estou</button><button type="button" data-mapa="prox">Próxima parada</button><button type="button" data-mapa="tudo">Rota inteira</button><button type="button" data-mapa="ampliar">Ampliar</button>';
+    L.DomEvent.disableClickPropagation(div); L.DomEvent.disableScrollPropagation(div);
+    div.addEventListener('click', e => { const b = e.target.closest('button[data-mapa]'); if (b) acaoDoMapa(b.dataset.mapa, b); });
+    return div;
+  };
+  ctl.addTo(mapa);
+}
+function acaoDoMapa(acao, btn) {
+  if (acao === 'eu') { alternarLocalizacao(btn); return; }
+  if (acao === 'prox') {
+    if (!marcadorProx) { toast('Todas as paradas já foram feitas.'); return; }
+    mapa.setView(marcadorProx.getLatLng(), Math.max(mapa.getZoom(), 17)); marcadorProx.openPopup();
+    return;
+  }
+  if (acao === 'tudo') { if (limitesRota) mapa.fitBounds(limitesRota.pad(0.1)); return; }
+  if (acao === 'ampliar') {
+    const grande = $('rt-mapa-caixa').classList.toggle('grande');
+    btn.textContent = grande ? 'Reduzir' : 'Ampliar';
+    if (grande) mapa.scrollWheelZoom.enable(); else mapa.scrollWheelZoom.disable();
+    setTimeout(() => { mapa.invalidateSize(); if (limitesRota) mapa.fitBounds(limitesRota.pad(0.1)); }, 60);
+    if (grande) $('rt-mapa-caixa').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/* ---------- "Onde estou": ponto azul com a posição do celular ----------
+   A posição fica só na tela (não vai para o banco). Desliga sozinho quando a página sai da frente,
+   para não gastar bateria; é só tocar de novo quando voltar. */
+let vigia = null, meuPonto = null, minhaArea = null;
+function pararLocalizacao() {
+  if (vigia !== null && navigator.geolocation) navigator.geolocation.clearWatch(vigia);
+  vigia = null;
+  if (meuPonto && mapa) { mapa.removeLayer(meuPonto); mapa.removeLayer(minhaArea); }
+  meuPonto = minhaArea = null;
+  const b = document.querySelector('[data-mapa="eu"]'); if (b) b.classList.remove('on');
+}
+function alternarLocalizacao(btn) {
+  if (vigia !== null) { pararLocalizacao(); return; }
+  if (!navigator.geolocation) { toast('Este aparelho não informa a localização.'); return; }
+  btn.classList.add('on'); toast('Procurando sua localização…');
+  let primeira = true;
+  vigia = navigator.geolocation.watchPosition(pos => {
+    const ll = [pos.coords.latitude, pos.coords.longitude], prec = Math.min(pos.coords.accuracy || 0, 500);
+    if (!meuPonto) {
+      minhaArea = L.circle(ll, { radius: prec, color: '#2F80ED', weight: 1, fillOpacity: 0.12, interactive: false }).addTo(mapa);
+      meuPonto = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 3, fillColor: '#2F80ED', fillOpacity: 1 }).bindPopup('Você está aqui').addTo(mapa);
+    } else { meuPonto.setLatLng(ll); minhaArea.setLatLng(ll).setRadius(prec); }
+    if (primeira) { primeira = false; mapa.setView(ll, Math.max(mapa.getZoom(), 16)); }
+  }, err => {
+    toast(err.code === 1 ? 'Sem permissão para ver sua localização. Libere nas configurações do navegador.' : 'Não consegui achar sua localização agora.');
+    pararLocalizacao();
+  }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && vigia !== null) pararLocalizacao(); });
+
+/* Texto do balãozinho de cada alfinete */
+function popupParada(p, i, fixo) {
+  if (fixo) return `<b>${esc(p.nome)}</b>`;
+  const c0 = p.criancas[0], end = c0.endereco + (c0.bairro ? ', ' + c0.bairro : '');
+  return `<b>${i} · ${esc(nomesParada(p))}</b><br>${esc(end)}<br><a href="https://waze.com/ul?ll=${p.lat},${p.lng}&amp;navigate=yes" target="_blank" rel="noopener">Abrir no Waze</a>`;
 }
 
 /* ---------- avisos de saúde e de entrega em cada cartão ---------- */
@@ -416,18 +519,23 @@ function desenhar(rota, ajustarMapa) {
     (naFila ? ` · ⏳ ${naFila} esperando internet` : '');
   $('rt-resumo').hidden = false;
 
-  /* Mapa: laranja = próxima, verde = já feita */
+  /* Mapa: amarelo pulsando = próxima, verde = já feita */
   $('rt-mapa-caixa').hidden = false;
   garantirMapa();
   camadas.clearLayers();
+  marcadorProx = null;
+  /* Linha da rota: contorno escuro + amarelo por cima (aparece bem no satélite e no mapa de ruas) */
+  L.polyline(rota.linha, { color: '#0E0E10', weight: 9, opacity: 0.5, interactive: false }).addTo(camadas);
+  L.polyline(rota.linha, { color: '#F6C510', weight: 5, opacity: 0.95, dashArray: rota.ruas ? null : '6 8', interactive: false }).addTo(camadas);
   ordem.forEach((p, i) => {
     const fixo = i === 0 || i === ultimo, feita = !fixo && !!marcas[chaveParada(p)];
     const cls = fixo ? 'fixo' : feita ? 'feito' : i === proxima ? 'prox' : '';
     const icon = L.divIcon({ className: '', html: `<div class="pin-num ${cls}">${fixo ? p.icone : i}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
-    L.marker([p.lat, p.lng], { icon, zIndexOffset: i === proxima ? 1000 : 0 }).bindPopup(esc(fixo ? p.nome : i + ' · ' + nomesParada(p))).addTo(camadas);
+    const mk = L.marker([p.lat, p.lng], { icon, zIndexOffset: i === proxima ? 1000 : 0 }).bindPopup(popupParada(p, i, fixo)).addTo(camadas);
+    if (i === proxima) marcadorProx = mk;
   });
-  L.polyline(rota.linha, { color: '#F4845F', weight: 5, opacity: .85, dashArray: rota.ruas ? null : '6 8' }).addTo(camadas);
-  if (ajustarMapa) mapa.fitBounds(L.latLngBounds(ordem.map(p => [p.lat, p.lng])).pad(0.1));
+  limitesRota = L.latLngBounds(ordem.map(p => [p.lat, p.lng]));
+  if (ajustarMapa) mapa.fitBounds(limitesRota.pad(0.1));
 
   /* Cartões */
   $('rt-h2').hidden = false;
@@ -510,7 +618,8 @@ $('rt-recomecar').addEventListener('click', () => {
 });
 document.addEventListener('click', e => { const b = e.target.closest('[data-local]'); if (b) abrirLocal(b.dataset.local); });
 
-/* ---------- marcar a casa no mapa (feito uma vez por criança) ---------- */
+/* ---------- marcar a casa no mapa (feito uma vez por criança) ----------
+   Abre no satélite com zoom bem perto: fica fácil pôr o alfinete no portão certo. */
 let mapaLocal = null, alfinete = null, localAtual = null, localIds = [];
 function fecharLocal() { $('modal-local').hidden = true; document.body.classList.remove('travado'); localAtual = null; localIds = []; }
 $('local-fechar').addEventListener('click', fecharLocal);
@@ -548,7 +657,7 @@ async function abrirLocal(ids) {
   $('modal-local').hidden = false; document.body.classList.add('travado');
   if (!mapaLocal) {
     mapaLocal = L.map('local-mapa').setView(CENTRO_REGIAO, 12);
-    L.tileLayer(TILES, OPC_TILES).addTo(mapaLocal);
+    fundoDoMapa(mapaLocal);
     alfinete = L.marker(CENTRO_REGIAO, { draggable: true }).addTo(mapaLocal);
     mapaLocal.on('click', e => alfinete.setLatLng(e.latlng));
   }
@@ -559,7 +668,7 @@ async function abrirLocal(ids) {
   if (localAtual !== c) return; /* fechou a janela enquanto procurava */
   const p = pos || { lat: CENTRO_REGIAO[0], lng: CENTRO_REGIAO[1] };
   alfinete.setLatLng([p.lat, p.lng]);
-  mapaLocal.setView([p.lat, p.lng], pos ? 17 : 12);
+  mapaLocal.setView([p.lat, p.lng], pos ? 18 : 12);
   $('local-aviso').textContent =
     origem === 'salvo' ? 'Este é o local marcado. Se estiver errado, arraste o alfinete até a porta da casa (ou toque no lugar certo) e confirme.'
     : origem === 'busca' ? 'Achei este endereço, mas confira: a busca automática às vezes erra o número. Arraste o alfinete até a porta da casa (ou toque no lugar certo) e confirme.'

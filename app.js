@@ -1,6 +1,7 @@
 /* =================== VAN PV · painel conectado ao banco (Supabase) ===================
    Os dados ficam no banco. O navegador guarda só a sessão de login.
-   A assinatura online usa a Edge Function "assinatura" no Supabase. */
+   A assinatura online usa a Edge Function "assinatura" no Supabase.
+   A primeira tela depois do login é o "Início" (quadro do dia, montado pelo inicio.js). */
 const LUGARES = 23, ANO = 2027; /* LUGARES = lugares por turma */
 const DIAS_LEMBRETE = 3;     /* lembrar mensalidades que vencem de hoje até daqui a X dias */
 const DIAS_ANIVERSARIO = 7;  /* mostrar aniversários de hoje até daqui a X dias */
@@ -122,9 +123,10 @@ const naTurma = c => !turmaFiltro || c.turma === turmaFiltro;
 const porNome = (a, b) => (a || '').localeCompare(b || '', 'pt-BR', { sensitivity: 'base' });
 const ordemAlfabetica = (a, b) => porNome(a.responsavel.nome, b.responsavel.nome) || porNome(a.crianca.nome, b.crianca.nome);
 function redesenharLista() {
-  const tela = location.hash.slice(1).split('/')[0];
+  const tela = location.hash.slice(1).split('/')[0] || 'inicio';
   if (tela === 'financeiro') renderFinanceiro();
   else if (tela === 'responsaveis') renderResponsaveis();
+  else if (tela === 'inicio' && window.renderInicio) window.renderInicio();
   else renderContratos();
 }
 document.querySelectorAll('.chip[data-turma]').forEach(ch => ch.addEventListener('click', () => {
@@ -233,7 +235,7 @@ function mostrar(id) { document.querySelectorAll('.screen').forEach(s => s.class
 function carregando() { document.getElementById('tab-contratos').innerHTML = '<tr><td colspan="6" class="vazio">Carregando…</td></tr>'; }
 async function rota() {
   fecharModais();
-  const h = location.hash.slice(1) || 'contratos', [tela, param] = h.split('/');
+  const h = location.hash.slice(1) || 'inicio', [tela, param] = h.split('/');
   if (tela === 'assinar') { mostrar('tela-assinar'); telaAssinar(param); window.scrollTo(0, 0); return; }
   if (!sb) { mostrar('tela-login'); erroLogin('Não foi possível carregar a conexão com o banco. Confira a internet e o arquivo config.js.'); document.getElementById('login-btn').disabled = true; return; }
   if (!usuario) { mostrar('tela-login'); return; }
@@ -249,10 +251,10 @@ async function rota() {
   renderPerfil();
   const grupo = (tela === 'novo' || tela === 'contrato') ? 'contratos' : tela;
   document.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === grupo));
-  const mapa = { contratos: 'tela-contratos', novo: 'tela-novo', contrato: 'tela-detalhe', financeiro: 'tela-financeiro', responsaveis: 'tela-responsaveis' };
-  const alvo = mapa[tela] || 'tela-contratos';
+  const mapa = { inicio: 'tela-inicio', contratos: 'tela-contratos', novo: 'tela-novo', contrato: 'tela-detalhe', financeiro: 'tela-financeiro', responsaveis: 'tela-responsaveis' };
+  const alvo = mapa[tela] || 'tela-inicio';
   document.querySelectorAll('#app .screen').forEach(s => s.classList.toggle('active', s.id === alvo));
-  const listas = ['tela-contratos', 'tela-financeiro', 'tela-responsaveis'];
+  const listas = ['tela-inicio', 'tela-contratos', 'tela-financeiro', 'tela-responsaveis'];
   if (!carregado) carregando();
   if (!carregado || listas.includes(alvo)) { if (!(await recarregar())) return; }
   if (alvo === 'tela-contratos') renderContratos();
@@ -260,6 +262,7 @@ async function rota() {
   if (alvo === 'tela-detalhe') telaDetalhe(param);
   if (alvo === 'tela-financeiro') renderFinanceiro();
   if (alvo === 'tela-responsaveis') renderResponsaveis();
+  if (alvo === 'tela-inicio' && window.renderInicio) window.renderInicio();
   window.scrollTo(0, 0);
 }
 addEventListener('hashchange', rota);
@@ -274,7 +277,7 @@ document.getElementById('form-login').addEventListener('submit', async e => {
   btn.disabled = false; btn.textContent = 'Entrar';
   if (error) { erroLogin(/invalid login credentials/i.test(error.message) ? 'E-mail ou senha incorretos.' : traduzErro(error)); return; }
   senhaEl.value = ''; usuario = data.user; acessoOk = false; carregado = false;
-  irPara('#contratos');
+  irPara('#inicio');
 });
 document.getElementById('sair').addEventListener('click', async () => { await sb.auth.signOut(); limparEstado(); modoRecuperar(false); irPara('#login'); });
 
@@ -331,7 +334,7 @@ document.getElementById('form-nova-senha').addEventListener('submit', async e =>
   }
   prepararNovaSenha();
   toast('Senha alterada.');
-  irPara('#contratos');
+  irPara('#inicio');
 });
 
 /* ---------- lugares por turma (automático) ----------

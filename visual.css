@@ -1,0 +1,132 @@
+/* =================== VAN PV · visual por aba ===================
+   Contratos (e novo contrato, detalhe): LOUSA · Financeiro, Responsáveis, Documentos e Roteiro: RODOVIÁRIA.
+   Vale só dentro do painel e nas páginas de Documentos e Roteiro: o login e a página de assinatura dos pais continuam iguais.
+   Celular ou navegador muito antigo: continua com o visual de antes (nada quebra).
+   Para voltar ao visual antigo: tire a linha do visual.css do index.html (e do documentos.html / roteiro.html). */
+
+/* ---------- 1. Cores e letras de cada visual ---------- */
+/* Lousa: o padrão do painel */
+html:has(#app.active){
+  color-scheme:dark;
+  --bg:#24382E;--card:#2C4237;--tx:#F2F0E6;--mu:#D5DCD3;--mu2:#AEBBAE;--line:rgba(242,240,230,.16);
+  --dk:#17251D;--dtx:#F2F0E6;--ac:#F3D36B;--on-ac:#2A2410;
+  --ok:#7FD3A8;--okbg:#1F4A35;--oktx:#BDEBD3;--on-ok:#10301F;
+  --warn:#F3D36B;--warnbg:#4A4426;--warntx:#F7E3A0;
+  --red:#F2A0A0;--redbg:#4B2A2A;--redtx:#F8CACA;--pix:#8CCFE0;
+  --campo-bg:#1D2F26;--campo-borda:rgba(242,240,230,.28);--linha-hover:rgba(242,240,230,.06);
+  --neutro-bg:rgba(242,240,230,.12);--neutro-tx:#D5DCD3;--esperado:#3F584A;
+  --btn-bg:#F2F0E6;--btn-tx:#1F3127;--btn-hover:#FFFFFF;
+  --or-bg:#F3D36B;--or-tx:#2A2410;--or-hover:#F7DF8E;--or-borda:transparent;
+  --f-titulo:'Patrick Hand',cursive;--f-numero:'Patrick Hand',cursive;--f-texto:Inter,system-ui,sans-serif;
+  --peso-titulo:400;--tam-h1:32px;--tam-h2:21px;--tam-numero:34px;--peso-numero:400;
+  --linha-estilo:dashed;--card-borda:1px solid rgba(242,240,230,.12);--topo-borda:6px solid #8A6A43;
+  background:var(--bg);
+}
+/* Rodoviária: abas Financeiro e Responsáveis, e as páginas de Documentos (main.dc) e Roteiro (main.rt) */
+html:has(#tela-financeiro.active),html:has(#tela-responsaveis.active),html:has(main.dc),html:has(main.rt){
+  color-scheme:dark;
+  --bg:#141416;--card:#1E1E22;--tx:#EDEDED;--mu:#C9C9CF;--mu2:#9A9AA2;--line:rgba(255,255,255,.1);
+  --dk:#0E0E10;--dtx:#EDEDED;--ac:#F6C510;--on-ac:#1A1500;
+  --ok:#5CCB98;--okbg:#173A2C;--oktx:#A6E8C9;--on-ok:#0B2519;
+  --warn:#F6C510;--warnbg:#3A3214;--warntx:#F6DE85;
+  --red:#F08A8A;--redbg:#3D1B1B;--redtx:#F6B1B1;--pix:#5BB7CC;
+  --campo-bg:#141416;--campo-borda:rgba(255,255,255,.2);--linha-hover:rgba(255,255,255,.04);
+  --neutro-bg:#2A2A2E;--neutro-tx:#C9C9CF;--esperado:#2E2E33;
+  --btn-bg:#F6C510;--btn-tx:#1A1500;--btn-hover:#FFD43B;
+  --or-bg:transparent;--or-tx:#F6C510;--or-hover:rgba(246,197,16,.12);--or-borda:#F6C510;
+  --f-titulo:Inter,system-ui,sans-serif;--f-numero:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;--f-texto:Inter,system-ui,sans-serif;
+  --peso-titulo:600;--tam-h1:22px;--tam-h2:16px;--tam-numero:24px;--peso-numero:500;
+  --linha-estilo:solid;--card-borda:0 solid transparent;--topo-borda:0 solid transparent;
+  background:var(--bg);
+}
+
+/* ---------- 2. Peças usando as cores acima ----------
+   ":is(...)" no começo de cada linha quer dizer: "no painel OU na página de Documentos OU no Roteiro". */
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) body{font-family:var(--f-texto)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .topbar{border-bottom:var(--topo-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) h1{font-family:var(--f-titulo);font-weight:var(--peso-titulo);font-size:var(--tam-h1);letter-spacing:0}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) h2{font-family:var(--f-titulo);font-weight:var(--peso-titulo);font-size:var(--tam-h2)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .stat b{font-family:var(--f-numero);font-size:var(--tam-numero);font-weight:var(--peso-numero)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) :is(.stat,.card,.tabela,.modal,.resp-card,.aniver,.emerg-item,.menu){background:var(--card);color:var(--tx);border:var(--card-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .aniver{border-left:4px solid var(--ac)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn{background:var(--btn-bg);color:var(--btn-tx)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn:hover{background:var(--btn-hover)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn.or{background:var(--or-bg);color:var(--or-tx);border:1px solid var(--or-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn.or:hover{background:var(--or-hover)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--campo-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn.ghost:hover{background:var(--linha-hover)}
+/* Botão verde de confirmar ("✓ Renovei", "✓ Embarcou") */
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn.ok{background:var(--ok);color:var(--on-ok)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .btn.ok:hover{background:var(--ok);filter:brightness(1.1)}
+/* O botão do SAMU fica sempre vermelho, em qualquer visual */
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) a.btn[href="tel:192"]{background:#C62828;color:#fff;border:0}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) a.btn[href="tel:192"]:hover{background:#A51F1F}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .link{color:var(--mu)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .chip{background:transparent;color:var(--tx);border-color:var(--campo-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .chip.on{background:var(--btn-bg);color:var(--btn-tx);border-color:var(--btn-bg)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) :is(.busca,.campo input,.campo select,.campo textarea,.linkbox input,.desp-mes input){background:var(--campo-bg);color:var(--tx);border-color:var(--campo-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) :is(.busca,.campo input,.campo select,.campo textarea):focus{border-color:var(--ac)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .rad{background:var(--campo-bg);border-color:var(--campo-borda);color:var(--tx)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .rad:has(input:checked){border-color:var(--ac)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) :is(th,td){border-bottom-color:var(--line)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) td{border-bottom-style:var(--linha-estilo)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) :is(tr.clicavel:hover td,.menu-item:hover){background:var(--linha-hover)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .menu-item{color:var(--tx)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .modal .info{background:var(--linha-hover)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) :is(.tag.rascunho,.tag.aberto){background:var(--neutro-bg);color:var(--neutro-tx)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .tl i{background:var(--campo-bg);border-color:var(--campo-borda);color:var(--mu2)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .tl li.feito i{background:var(--ok);border-color:var(--ok);color:var(--on-ok)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .tl li.atual i{border-color:var(--ac);color:var(--ac)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .mes{background:var(--campo-bg);border-color:var(--campo-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .mes.pago{background:var(--ok);border-color:var(--ok);color:var(--on-ok)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .mes.pago.pix{background:var(--pix);border-color:var(--pix)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .mes.atrasado{background:var(--redbg);border-color:var(--red)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .mes:hover:not(:disabled){border-color:var(--ac)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .legenda i{background:var(--campo-bg);border-color:var(--campo-borda)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .legenda i.d{background:var(--ok);border-color:var(--ok)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .legenda i.p{background:var(--pix);border-color:var(--pix)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .legenda i.a{background:var(--redbg);border-color:var(--red)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .legenda i.esp{background:var(--esperado);border-color:var(--esperado)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .g-esperado{fill:var(--esperado)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .avatar{color:var(--on-ac)}
+:is(html:has(#app.active),html:has(main.dc),html:has(main.rt)) .desp-barra i{background:var(--ac)}
+
+/* ---------- 3. Plaquinhas do quadro de partidas (Financeiro, Documentos e Roteiro) ----------
+   Em Responsáveis não: lá a etiqueta vermelha é a mesma do aviso de alergia
+   e precisa continuar vermelha para chamar atenção. */
+html:has(#tela-financeiro.active) .stat b{display:inline-block;color:#F6C510;background:#2A2A2E;padding:3px 10px;border-radius:4px;position:relative;margin-top:6px}
+html:has(#tela-financeiro.active) .stat b.neg{color:var(--red)}
+html:has(#tela-financeiro.active) .tag.atrasado{background:transparent;color:#F6C510;font-family:var(--f-numero);padding:0}
+/* Documentos: os três números do topo viram plaquinhas, cada um com a sua cor */
+html:has(main.dc) .dc-num b{display:inline-block;font-family:var(--f-numero);font-weight:500;background:#2A2A2E;padding:2px 12px;border-radius:4px;position:relative;margin-bottom:4px}
+/* Roteiro: crianças, km e minutos viram plaquinhas amarelas */
+html:has(main.rt) .rt-num b{display:inline-block;font-family:var(--f-numero);font-weight:500;color:#F6C510;background:#2A2A2E;padding:2px 10px;border-radius:4px;position:relative;margin-bottom:4px}
+/* A linha no meio da plaquinha (o "corte" das letrinhas que giram) */
+:is(html:has(#tela-financeiro.active) .stat b,html:has(main.dc) .dc-num b,html:has(main.rt) .rt-num b)::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.7)}
+
+/* ---------- 4. Roteiro: mesmo visual do Financeiro ---------- */
+html:has(main.rt) .seg{background:var(--card);border-color:var(--line)}
+html:has(main.rt) .seg-btn{color:var(--mu2)}
+html:has(main.rt) .seg-btn.on{background:#F6C510;color:#1A1500}
+html:has(main.rt) .rt-num{background:transparent}
+html:has(main.rt) .rt-saida input{background:var(--campo-bg);color:var(--tx);border-color:var(--campo-borda)}
+html:has(main.rt) .rt-comecar .btn.or{background:#F6C510;color:#1A1500;border:0}
+html:has(main.rt) .rt-comecar .btn.or:hover{background:#FFD43B}
+html:has(main.rt) .pc{border-color:var(--line)}
+html:has(main.rt) .pc.proxima{border-color:#F6C510;box-shadow:0 6px 20px rgba(246,197,16,.15)}
+html:has(main.rt) .pc-num{background:#2A2A2E;color:#F6C510;font-family:var(--f-numero)}
+html:has(main.rt) .pc.proxima .pc-num{background:#F6C510;color:#1A1500}
+html:has(main.rt) .pc.feita .pc-num{background:var(--ok);color:var(--on-ok)}
+html:has(main.rt) .pc-num.fixo{background:transparent;border:1.5px solid var(--line)}
+html:has(main.rt) .pc-num.falta-marcar{background:var(--warn);color:#1A1500}
+html:has(main.rt) .pc-hora{font-family:var(--f-numero);color:#F6C510}
+html:has(main.rt) .pc-selo.prox{background:#F6C510;color:#1A1500}
+html:has(main.rt) .pc-aviso{background:rgba(255,255,255,.05)}
+/* Mapa de ruas no escuro (o satélite fica com as cores reais) */
+html:has(main.rt) .tiles-ruas{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.5)}
+
+/* ---------- 5. Impressão do Roteiro: papel branco ---------- */
+@media print{
+  html:has(main.rt){--bg:#fff;--card:#fff;--tx:#111;--mu:#333;--mu2:#555;--line:#ccc;background:#fff;color-scheme:light}
+  html:has(main.rt) .tiles-ruas{filter:none}
+}

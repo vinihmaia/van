@@ -15,6 +15,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <script>/* Liga o tema escuro antes de desenhar a página (evita piscar). Nunca na página de assinatura dos pais. */try{var t=localStorage.getItem('van-tema')||'auto';if(location.hash.indexOf('#assinar')!==0&&(t==='escuro'||(t==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.setAttribute('data-tema','escuro');}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="visual.css">
+<script>/* Letras dos novos visuais. Não carrega na página de assinatura dos pais (assim o acesso deles não passa pelo Google). */if(location.hash.indexOf('#assinar')!==0){var l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Patrick+Hand&family=IBM+Plex+Mono:wght@500&display=swap';document.head.appendChild(l);}</script>
 <style>
 [hidden]{display:none!important}
 /* ===== Aba Responsáveis em cartões (com saúde e contatos) ===== */
@@ -76,7 +78,7 @@
       <p class="erro" id="erro-ns"></p>
       <button class="btn" id="ns-btn" type="submit">Salvar nova senha</button>
     </form>
-    <p style="text-align:center;margin:14px 0 0"><a class="link" href="#contratos">Voltar ao painel</a></p>
+    <p style="text-align:center;margin:14px 0 0"><a class="link" href="#inicio">Voltar ao painel</a></p>
   </div>
 </section>
 
@@ -85,7 +87,7 @@
   <header class="topbar">
     <div class="topin">
       <div class="marca"><svg viewBox="0 0 360 120" aria-label="vitrapi"><use href="#vitrapi"/></svg><span>Tia Patrícia e Tio Vitor</span></div>
-      <nav class="tabs" aria-label="Seções"><a href="#contratos" data-tab="contratos">Contratos</a><a href="#financeiro" data-tab="financeiro">Financeiro</a><a href="#responsaveis" data-tab="responsaveis">Responsáveis</a><a href="roteiro.html">Roteiro</a></nav>
+      <nav class="tabs" aria-label="Seções"><a href="#inicio" data-tab="inicio">Início</a><a href="#contratos" data-tab="contratos">Contratos</a><a href="#financeiro" data-tab="financeiro">Financeiro</a><a href="#responsaveis" data-tab="responsaveis">Responsáveis</a><a href="roteiro.html">Roteiro</a></nav>
       <div class="quem">
         <button class="perfil" id="perfil-btn" type="button" aria-haspopup="true" aria-expanded="false"><span class="avatar" id="perfil-avatar"></span><span id="perfil-ola">Olá!</span></button>
         <div class="menu" id="perfil-menu" hidden>
@@ -99,6 +101,21 @@
     </div>
   </header>
   <main class="wrap">
+
+    <!-- ===== INÍCIO: quadro do dia (inicio.js) ===== -->
+    <section class="screen" id="tela-inicio">
+      <div class="ini-topo">
+        <div><h1 id="ini-ola">Olá!</h1><p class="sub" id="ini-data"></p></div>
+        <div class="ini-nums">
+          <div class="ini-num"><b id="ini-lugares">—</b><span>lugares ocupados</span></div>
+          <div class="ini-num aberto"><b id="ini-aberto">—</b><span id="ini-aberto-rot">em aberto no mês</span></div>
+          <div class="ini-num"><b id="ini-assinados">—</b><span>contratos assinados</span></div>
+        </div>
+      </div>
+      <div class="filtros"><button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button></div>
+      <div class="ini-folha" id="ini-folha" hidden></div>
+      <div class="ini-quadro" id="ini-quadro"></div>
+    </section>
 
     <section class="screen" id="tela-contratos">
       <div class="head">

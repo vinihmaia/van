@@ -9,6 +9,8 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0A0608">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="visual.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 [hidden]{display:none!important}
 .dc{max-width:760px;margin:0 auto;padding:16px 14px 90px}
@@ -42,6 +44,8 @@
 .btn.ok{background:var(--ok);color:#fff}
 .btn.ok:hover{background:#178A66}
 #doc-apagar{margin-right:auto}
+.dc-hist{margin-top:14px;background:var(--bg);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6}
+.dc-hist ul{margin:6px 0 0;padding-left:18px}
 </style>
 </head>
 <body>
@@ -64,6 +68,7 @@
 </main>
 
 <!-- Janela: adicionar / editar / renovar -->
+<!-- Janela: adicionar / editar / renovar -->
 <div class="modal-fundo" id="modal-doc" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="doc-titulo">
     <h2 id="doc-titulo">Adicionar documento</h2>
@@ -73,8 +78,15 @@
       <label class="campo" style="margin-top:12px">De quem / qual (opcional)<input name="descricao" maxlength="80" placeholder="Ex.: CNH do Tio Vitor"></label>
       <label class="campo" style="margin-top:12px">Número (opcional)<input name="numero" maxlength="40"></label>
       <label class="campo" style="margin-top:12px">Vence em<input name="vencimento" type="date" required></label>
+      <div id="doc-renova" hidden>
+        <label class="campo" style="margin-top:12px">Quanto custou a renovação (opcional)<input name="custo" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 250"></label>
+        <label class="campo" style="margin-top:12px">Pago em<input name="pago_em" type="date"></label>
+        <label class="campo" style="margin-top:12px">Forma de pagamento<select name="forma"><option value="">Não informar</option><option value="pix">Pix</option><option value="dinheiro">Dinheiro</option><option value="cartao">Cartão</option><option value="boleto">Boleto</option></select></label>
+        <p class="sub" style="margin-top:8px;line-height:1.5">Com o valor preenchido, ele entra sozinho em Despesas (tipo "Documentos e seguro"). Deixe em branco se não teve custo.</p>
+      </div>
       <label class="campo" style="margin-top:12px">Avisar quantos dias antes<select name="avisar_dias"><option value="15">15 dias</option><option value="30">30 dias</option><option value="45">45 dias</option><option value="60">60 dias</option><option value="90">90 dias</option></select></label>
       <label class="campo" style="margin-top:12px">Observações (opcional)<textarea name="obs" maxlength="300" placeholder="Ex.: agendar com 2 semanas de antecedência" style="min-height:70px"></textarea></label>
+      <div class="dc-hist" id="doc-historico" hidden></div>
       <p class="erro" id="doc-erro"></p>
       <div class="facts"><button class="link" id="doc-apagar" type="button" hidden>Apagar</button><button class="btn ghost" id="doc-fechar" type="button">Fechar</button><button class="btn" id="doc-salvar" type="submit">Salvar</button></div>
     </form>

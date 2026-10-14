@@ -9,6 +9,8 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#0A0608">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="visual.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 [hidden]{display:none!important}
@@ -49,11 +51,27 @@
 /* Mapa */
 .mapa-caixa{border-radius:16px;overflow:hidden;margin-bottom:14px;position:relative;z-index:0}
 .mapa-rota{height:300px;background:#EFEDE7}
+.mapa-caixa.grande .mapa-rota{height:72vh}
 .mapa-confirmar{height:340px;border-radius:12px;overflow:hidden;margin-bottom:12px;position:relative;z-index:0}
-.pin-num{background:#0A0608;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font:700 12px Inter,system-ui,sans-serif;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.pin-num.prox{background:#F4845F;transform:scale(1.3)}
-.pin-num.feito{background:#1D9E75}
-.pin-num.fixo{background:#fff;font-size:15px}
+
+/* Alfinetes numerados (feitos para aparecer bem em cima da foto de satélite) */
+.pin-num{background:#0E0E10;color:#F6C510;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font:700 12px Inter,system-ui,sans-serif;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.55)}
+.pin-num.prox{background:#F6C510;color:#0E0E10;transform:scale(1.3);animation:pinPulso 1.6s ease-out infinite}
+.pin-num.feito{background:#1D9E75;color:#fff}
+.pin-num.fixo{background:#fff;color:#0E0E10;font-size:15px}
+@keyframes pinPulso{0%{box-shadow:0 0 0 0 rgba(246,197,16,.75),0 1px 5px rgba(0,0,0,.55)}100%{box-shadow:0 0 0 16px rgba(246,197,16,0),0 1px 5px rgba(0,0,0,.55)}}
+@media (prefers-reduced-motion:reduce){.pin-num.prox{animation:none}}
+
+/* Botões que ficam em cima do mapa */
+.mapa-fundo{display:flex;gap:2px;padding:3px;border-radius:9px;background:rgba(14,14,16,.88)}
+.mapa-fundo button,.mapa-acoes button{border:0;background:none;color:#EDEDED;font:600 12.5px Inter,system-ui,sans-serif;padding:8px 11px;border-radius:7px;cursor:pointer}
+.mapa-fundo button.on{background:#F6C510;color:#1A1500}
+.mapa-acoes{display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100vw - 70px)}
+.mapa-acoes button{background:rgba(14,14,16,.88)}
+.mapa-acoes button.on{background:#2F80ED;color:#fff}
+.mapa-fundo button:focus-visible,.mapa-acoes button:focus-visible{outline:2px solid #F6C510;outline-offset:1px}
+.leaflet-popup-content{font:13px/1.5 Inter,system-ui,sans-serif;color:#1A1410}
+.leaflet-popup-content a{color:#0B5A8A;font-weight:600}
 
 /* Cartões das paradas */
 .rt-h2{font-size:17px;margin:20px 2px 10px}
@@ -94,7 +112,7 @@
 [data-tema="escuro"] .seg-btn.on{background:#F3EDE6;color:#1A1410}
 [data-tema="escuro"] .rt-saida input{background:#15100D;border-color:rgba(255,255,255,.16)}
 [data-tema="escuro"] .mapa-rota{background:#15100D}
-@media print{.topbar,.seg,.rt-saida,.rt-comecar,.pc-botoes,.pc-mais,.rt-opcoes,.nao-imprimir{display:none!important}body{background:#fff}.pc{break-inside:avoid;opacity:1!important}.mapa-rota{height:360px}}
+@media print{.topbar,.seg,.rt-saida,.rt-comecar,.pc-botoes,.pc-mais,.rt-opcoes,.nao-imprimir,.mapa-fundo,.mapa-acoes{display:none!important}body{background:#fff}.pc{break-inside:avoid;opacity:1!important}.mapa-rota{height:360px}.pin-num.prox{animation:none}}
 </style>
 </head>
 <body>
