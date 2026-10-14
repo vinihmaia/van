@@ -294,3 +294,67 @@ body.travado{overflow:hidden}
 #form-desp .rad{min-width:calc(50% - 4px)}
 @media(max-width:560px){.desp-cat{grid-template-columns:1fr 90px}.desp-cat .desp-barra{grid-column:1/-1;grid-row:2}.desp-cat small{display:none}}
 [data-tema="escuro"] .desp-mes input{background:#15100D;border-color:rgba(255,255,255,.16)}
+/* ===== LOGIN · BILHETE DE EMBARQUE + QUADRO DE PARTIDAS (login.js) ===== */
+.login{--tx:#1A1410;--mu:#5A5047;--mu2:#8A7F74;--red:#A32D2D;--line:rgba(26,20,16,.12);background:#0E0E10;align-content:center;gap:22px;padding:24px 14px}
+.quadro{display:grid;gap:4px;justify-content:center;animation:blEntra .6s ease both}
+.quadro .linha{display:flex;gap:3px}
+.quadro .pl{width:min(5.6vw,22px);height:min(7.4vw,29px);background:#1E1E21;border-radius:3px;display:flex;align-items:center;justify-content:center;font:600 min(4.2vw,16px)/1 ui-monospace,Menlo,Consolas,monospace;color:#F6C510;position:relative;overflow:hidden}
+.quadro .pl::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.65)}
+.quadro .pl.rot{color:#D8D8D8}
+.quadro .pl.gira{animation:blFlap .08s linear}
+.login .lcard.bilhete{position:relative;max-width:380px;width:100%;padding:16px 18px 0;border-radius:14px;background-color:#FBF8F1;background-image:radial-gradient(rgba(26,20,16,.035) 1px,transparent 1px);background-size:4px 4px;box-shadow:0 22px 50px rgba(0,0,0,.55);color:#1A1410;text-align:left;overflow:visible;animation:blImprime .9s cubic-bezier(.16,1,.3,1) .15s both}
+.bilhete>.marca,#tela-login .bilhete>.sub,.bilhete>.aviso{display:none}
+.bl-topo{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid #E8E1D2}
+.bl-logo{display:flex;align-items:center;gap:9px}
+.bl-selo svg{width:32px;height:32px;display:block}
+.bl-nome b{display:block;font-size:13.5px}
+.bl-nome small{display:block;font-size:11.5px;color:#8A7F74}
+.bl-rot{font-size:11px;color:#8A7F74;letter-spacing:.06em;text-transform:uppercase}
+.bl-num{text-align:right;line-height:1.35}
+.bl-mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.bl-rota{display:flex;align-items:flex-end;justify-content:space-between;margin-top:12px}
+.bl-cod{font-size:32px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.bl-cidade{font-size:11.5px;color:#8A7F74;margin-top:3px}
+.bl-trilho{flex:1;margin:0 12px 26px;border-top:1.5px dashed #C9BFAA;position:relative}
+.bl-trilho svg{position:absolute;left:50%;top:-14px;margin-left:-14px;width:28px;height:28px}
+.bl-info{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px;margin-top:12px;padding:10px 0;border-top:1px solid #E8E1D2;border-bottom:1px solid #E8E1D2}
+.bl-info b{display:block;font-size:14.5px;font-weight:600;margin-top:2px}
+.bilhete h1{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8A7F74;text-align:left;margin:14px 0 8px}
+.bilhete form .sub{text-align:left!important;color:#5A5047}
+.bilhete .campo{color:#8A7F74;letter-spacing:.06em;position:relative}
+.bilhete .campo input{height:46px;background:#FFFDF8;border:1.5px solid #D9D2C3;border-radius:8px;color:#1A1410;font-size:16px}
+.bilhete .campo input:focus{border-color:#F4845F;box-shadow:0 0 0 3px rgba(244,132,95,.2)}
+.bilhete .campo input.com-olho{padding-right:84px}
+.bilhete .olho{position:absolute;right:5px;bottom:6px;height:34px;padding:0 12px;border:0;border-radius:6px;background:none;color:#1A1410;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0}
+.bilhete .olho:hover{background:rgba(26,20,16,.06)}
+.bilhete .erro{color:#A32D2D;min-height:18px}
+.bl-picote{display:flex;align-items:center;height:20px;margin:14px -18px 0}
+.bl-picote::before,.bl-picote::after{content:"";width:20px;height:20px;border-radius:50%;background:#0E0E10;flex:none}
+.bl-picote::before{margin-left:-10px}
+.bl-picote::after{margin-right:-10px}
+.bl-picote span{flex:1;border-top:3px dotted #0E0E10;margin:0 6px}
+.bl-canhoto{margin:0 -18px;padding:10px 18px 16px;background:#F3EBDA;border-radius:0 0 14px 14px}
+.bl-canhoto-linha{display:flex;align-items:center;gap:12px}
+.login .bilhete .bl-canhoto .btn{flex:1;width:auto;margin:0;height:50px;border-radius:10px;background:#F4845F;color:#fff;font-size:15.5px;font-weight:600}
+.login .bilhete .bl-canhoto .btn:hover{background:#E8734E}
+.bl-barras{display:flex;gap:1.5px;height:46px}
+.bl-barras i{display:block;background:#1A1410}
+.bl-rodape{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:#8A7F74}
+.bl-rodape p{margin:0!important;text-align:left!important}
+.bilhete .link{color:#5A5047;font-size:12.5px}
+.bl-carimbo{position:absolute;right:20px;top:118px;width:106px;height:106px;border:3px solid #1D9E75;border-radius:50%;color:#1D9E75;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.06em;text-align:center;line-height:1.35;transform:rotate(-12deg) scale(.6);opacity:0;pointer-events:none;background:rgba(251,248,241,.7)}
+.bl-saida{position:fixed;inset:0;z-index:300;background:#0E0E10;display:grid;place-items:center;padding:14px;animation:blSome .45s ease 1.3s forwards}
+.bl-saida .lcard.bilhete{animation:none;max-width:380px;width:100%}
+.bl-saida .bl-picote,.bl-saida .bl-canhoto{animation:blRasga .7s cubic-bezier(.5,0,.75,0) .1s forwards}
+.bl-saida .bl-carimbo{animation:blCarimbo .45s cubic-bezier(.2,1.6,.4,1) .55s forwards}
+.login .bilhete.tremer{animation:blTreme .4s ease}
+.login :focus-visible{outline:2px solid #F4845F;outline-offset:2px}
+@media (max-width:380px){.bl-cod{font-size:26px}.bl-info b{font-size:13px}}
+@keyframes blImprime{from{opacity:0;transform:translateY(-36px)}to{opacity:1;transform:none}}
+@keyframes blEntra{from{opacity:0}to{opacity:1}}
+@keyframes blFlap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.2)}}
+@keyframes blRasga{to{transform:translateY(90px) rotate(-8deg);opacity:0}}
+@keyframes blCarimbo{to{opacity:1;transform:rotate(-12deg) scale(1)}}
+@keyframes blSome{to{opacity:0;visibility:hidden}}
+@keyframes blTreme{0%,100%{transform:none}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+@media (prefers-reduced-motion:reduce){.login *,.bl-saida,.bl-saida *{animation:none!important}}
