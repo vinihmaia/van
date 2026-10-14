@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Van PV · Roteiro</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0A0608">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+[hidden]{display:none!important}
+.mapa-rota{height:420px;border-radius:14px;overflow:hidden;background:#EFEDE7;margin-bottom:14px;position:relative;z-index:0}
+.mapa-confirmar{height:340px;border-radius:12px;overflow:hidden;margin-bottom:12px;position:relative;z-index:0}
+.parada{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #F1EEE9}
+.parada:last-child{border-bottom:0}
+.num{width:30px;height:30px;border-radius:50%;background:var(--dk);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+.num.fixo{background:var(--ac)}
+.parada b{display:block;font-size:14px}
+.parada small{display:block;font-size:12.5px;color:var(--mu2);margin-top:2px}
+.hora{display:inline-block;font-weight:600;margin-right:8px;color:var(--ac)}
+.acoes-parada{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pin-num{background:#0A0608;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font:600 12px Inter,system-ui,sans-serif;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pin-num.fixo{background:#F4845F}
+.resumo{font-size:13.5px;margin:0 0 12px;color:var(--mu)}
+.alerta{background:var(--warnbg);color:var(--warntx);border-radius:12px;padding:12px 14px;font-size:13.5px;margin-bottom:10px;line-height:1.5}
+.alerta.erro{background:var(--redbg);color:var(--redtx)}
+.alerta a{color:inherit;font-weight:600}
+.trechos{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.saida{display:flex;align-items:center;gap:8px;font-size:13px;margin-left:auto}
+.saida input{border:1px solid rgba(26,20,16,.15);border-radius:999px;padding:6px 12px;font:inherit;background:#fff}
+@media(max-width:600px){.parada{grid-template-columns:30px 1fr}.acoes-parada{grid-column:2;justify-content:flex-start}.saida{margin-left:0}.mapa-rota{height:340px}}
+@media print{.topbar,.filtros,.trechos,.acoes-parada,.nao-imprimir{display:none!important}body{background:#fff}.mapa-rota{height:380px}}
+</style>
+</head>
+<body>
+<header class="topbar nao-imprimir">
+  <div class="topin">
+    <div class="marca"><span style="border:0;padding:0;color:#fff;font-weight:600">Roteiro da van</span></div>
+    <a class="btn ghost sm" href="index.html">← Voltar ao painel</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="alerta" id="aviso-login" hidden></div>
+
+  <div id="conteudo" hidden>
+    <div class="head">
+      <div><h1 id="rot-titulo">Roteiro</h1><p class="sub" id="rot-sub"></p></div>
+      <div class="acts nao-imprimir"><button class="btn ghost" id="rot-imprimir" type="button">Imprimir</button><button class="btn" id="rot-calcular" type="button">Recalcular rota</button></div>
+    </div>
+
+    <div class="filtros">
+      <button class="chip on" data-turma="Manhã" type="button">Turma da manhã</button><button class="chip" data-turma="Tarde" type="button">Turma da tarde</button>
+    </div>
+    <div class="filtros">
+      <button class="chip on" data-sentido="ida" type="button">Ida (casa → escola)</button><button class="chip" data-sentido="volta" type="button">Volta (escola → casa)</button>
+      <label class="saida">Horário de saída <input id="rot-saida" type="time"></label>
+    </div>
+
+    <div id="rot-alertas"></div>
+    <p class="resumo" id="rot-resumo"></p>
+    <div class="mapa-rota" id="rot-mapa"></div>
+    <div class="trechos" id="rot-trechos"></div>
+    <div class="tabela" id="rot-lista"></div>
+
+    <div id="bloco-sem-local" hidden>
+      <div class="secao"><h2>Sem ponto confirmado <span id="sem-local-qtd"></span></h2></div>
+      <p class="sub" style="margin:-4px 0 10px">Estas crianças NÃO entram no roteiro até você confirmar o ponto de embarque no mapa.</p>
+      <div class="tabela" id="rot-sem-local"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Janela: confirmar o ponto de embarque no mapa -->
+<div class="modal-fundo" id="modal-local" hidden>
+  <div class="modal largo" role="dialog" aria-modal="true" aria-labelledby="local-titulo">
+    <h2 id="local-titulo">Confirmar ponto de embarque</h2>
+    <p class="sub" id="local-sub"></p>
+    <div class="alerta" id="local-aviso"></div>
+    <div class="mapa-confirmar" id="local-mapa"></div>
+    <p class="erro" id="local-erro"></p>
+    <div class="facts"><button class="btn ghost" id="local-fechar" type="button">Cancelar</button><button class="btn" id="local-salvar" type="button">Confirmar este ponto</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
+<script src="roteiro.js"></script>
+</body>
+</html>

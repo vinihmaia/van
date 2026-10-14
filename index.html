@@ -13,16 +13,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Van PV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600&display=swap" rel="stylesheet">
+<script>/* Liga o tema escuro antes de desenhar a página (evita piscar). Nunca na página de assinatura dos pais. */try{var t=localStorage.getItem('van-tema')||'auto';if(location.hash.indexOf('#assinar')!==0&&(t==='escuro'||(t==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.setAttribute('data-tema','escuro');}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 <style>[hidden]{display:none!important}</style>
 </head>
 <body>
 <svg style="display:none" aria-hidden="true">
-<symbol id="vitrapi" viewBox="0 0 360 120"><text x="18" y="64" font-family="'IBM Plex Mono',ui-monospace,monospace" font-weight="600" font-size="54"><tspan fill="#8A8A8A">&lt;</tspan><tspan fill="#F7F7F5">vitr</tspan><tspan fill="#F5B700">api</tspan><tspan fill="#8A8A8A">/&gt;</tspan></text><path d="M66 86 Q172 118 278 86" fill="none" stroke="#F5B700" stroke-width="7" stroke-linecap="round"/><rect x="58" y="79" width="14" height="14" fill="#F7F7F5"/><rect x="272" y="79" width="14" height="14" fill="#F7F7F5"/></symbol>
-<symbol id="vitrapi-escuro" viewBox="0 0 360 120"><text x="18" y="64" font-family="'IBM Plex Mono',ui-monospace,monospace" font-weight="600" font-size="54"><tspan fill="#8A8A8A">&lt;</tspan><tspan fill="#1A1410">vitr</tspan><tspan fill="#F5B700">api</tspan><tspan fill="#8A8A8A">/&gt;</tspan></text><path d="M66 86 Q172 118 278 86" fill="none" stroke="#F5B700" stroke-width="7" stroke-linecap="round"/><rect x="58" y="79" width="14" height="14" fill="#1A1410"/><rect x="272" y="79" width="14" height="14" fill="#1A1410"/></symbol>
+<symbol id="vitrapi" viewBox="0 0 360 120"><text x="18" y="64" font-family="'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace" font-weight="600" font-size="54"><tspan fill="#8A8A8A">&lt;</tspan><tspan fill="#F7F7F5">vitr</tspan><tspan fill="#F5B700">api</tspan><tspan fill="#8A8A8A">/&gt;</tspan></text><path d="M66 86 Q172 118 278 86" fill="none" stroke="#F5B700" stroke-width="7" stroke-linecap="round"/><rect x="58" y="79" width="14" height="14" fill="#F7F7F5"/><rect x="272" y="79" width="14" height="14" fill="#F7F7F5"/></symbol>
+<symbol id="vitrapi-escuro" viewBox="0 0 360 120"><text x="18" y="64" font-family="'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace" font-weight="600" font-size="54"><tspan fill="#8A8A8A">&lt;</tspan><tspan fill="#1A1410">vitr</tspan><tspan fill="#F5B700">api</tspan><tspan fill="#8A8A8A">/&gt;</tspan></text><path d="M66 86 Q172 118 278 86" fill="none" stroke="#F5B700" stroke-width="7" stroke-linecap="round"/><rect x="58" y="79" width="14" height="14" fill="#1A1410"/><rect x="272" y="79" width="14" height="14" fill="#1A1410"/></symbol>
 <symbol id="pv-placa" viewBox="0 0 60 60"><rect width="60" height="60" rx="13" fill="#F6C510"/><g transform="translate(3.5 3.5) scale(.53)"><rect x="14" y="10" width="72" height="72" rx="16" fill="#0B0B0B"/><rect x="22" y="18" width="56" height="26" rx="7" fill="#F6C510"/><rect x="14" y="50" width="72" height="6" fill="#F4845F"/><rect x="6" y="30" width="7" height="12" rx="2.5" fill="#0B0B0B"/><rect x="87" y="30" width="7" height="12" rx="2.5" fill="#0B0B0B"/><rect x="22" y="60" width="14" height="9" rx="4.5" fill="#F6C510"/><rect x="64" y="60" width="14" height="9" rx="4.5" fill="#F6C510"/><path d="M40 66q10 8 20 0" fill="none" stroke="#F6C510" stroke-width="4" stroke-linecap="round"/><rect x="20" y="78" width="18" height="12" rx="4" fill="#F6C510" stroke="#0B0B0B" stroke-width="3"/><rect x="62" y="78" width="18" height="12" rx="4" fill="#F6C510" stroke="#0B0B0B" stroke-width="3"/></g></symbol>
 </svg>
 
@@ -72,8 +70,17 @@
   <header class="topbar">
     <div class="topin">
       <div class="marca"><svg viewBox="0 0 360 120" aria-label="vitrapi"><use href="#vitrapi"/></svg><span>Tia Patrícia e Tio Vitor</span></div>
-      <nav class="tabs" aria-label="Seções"><a href="#contratos" data-tab="contratos">Contratos</a><a href="#financeiro" data-tab="financeiro">Financeiro</a><a href="#responsaveis" data-tab="responsaveis">Responsáveis</a></nav>
-      <div class="quem"><span id="quem-email"></span><a class="link" href="#nova-senha">Trocar senha</a><button class="link" id="sair" type="button">Sair</button></div>
+      <nav class="tabs" aria-label="Seções"><a href="#contratos" data-tab="contratos">Contratos</a><a href="#financeiro" data-tab="financeiro">Financeiro</a><a href="#responsaveis" data-tab="responsaveis">Responsáveis</a><a href="#emergencia" data-tab="emergencia">Emergência</a><a href="roteiro.html">Roteiro</a></nav>
+      <div class="quem">
+        <button class="perfil" id="perfil-btn" type="button" aria-haspopup="true" aria-expanded="false"><span class="avatar" id="perfil-avatar"></span><span id="perfil-ola">Olá!</span></button>
+        <div class="menu" id="perfil-menu" hidden>
+          <div class="menu-cab"><b id="menu-nome"></b><small id="menu-email"></small></div>
+          <button class="menu-item" id="menu-editar" type="button">Editar perfil</button>
+          <button class="menu-item" id="menu-tema" type="button">Tema: automático</button>
+          <a class="menu-item" href="#nova-senha">Trocar senha</a>
+          <button class="menu-item" id="sair" type="button">Sair</button>
+        </div>
+      </div>
     </div>
   </header>
   <main class="wrap">
@@ -83,11 +90,13 @@
         <div><h1>Contratos 2027</h1><p class="sub">Turmas da manhã e da tarde · 23 lugares cada</p></div>
         <div class="acts"><button class="btn ghost" id="exportar" type="button">Exportar planilha</button><a class="btn" href="#novo">+ Novo contrato</a></div>
       </div>
+      <div class="filtros"><button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button></div>
+      <div class="aniver" id="aniversarios" hidden></div>
       <div class="stats">
         <div class="stat"><div class="lbl">Assinados</div><b class="ok" id="st-assinado">0</b></div>
         <div class="stat"><div class="lbl">Aguardando assinatura</div><b class="warn" id="st-aguardando">0</b></div>
         <div class="stat"><div class="lbl">Rascunhos</div><b id="st-rascunho">0</b></div>
-        <div class="stat"><div class="lbl">Vagas livres (manhã · tarde)</div><b id="st-vagas">—</b></div>
+        <div class="stat"><div class="lbl">Lugares ocupados (manhã · tarde)</div><b id="st-vagas">—</b><small id="st-vagas-det"></small></div>
       </div>
       <div class="filtros">
         <button class="chip on" data-f="todos" type="button">Todos</button><button class="chip" data-f="assinado" type="button">Assinados</button><button class="chip" data-f="aguardando" type="button">Aguardando</button><button class="chip" data-f="rascunho" type="button">Rascunhos</button><button class="chip" data-f="cancelado" type="button">Cancelados</button>
@@ -110,7 +119,7 @@
           <div><span class="campo">Turma</span><div class="rads"><label class="rad"><input type="radio" name="turma" value="Manhã" required>Manhã</label><label class="rad"><input type="radio" name="turma" value="Tarde">Tarde</label></div></div>
           <label class="campo">Endereço de embarque<input name="endereco" placeholder="Rua e número"></label>
           <label class="campo">Bairro<input name="bairro"></label>
-          <label class="campo">Mensalidade (R$)<input name="mensalidade" type="number" min="0" step="1" required></label>
+          <label class="campo">Mensalidade (R$)<input name="mensalidade" type="number" min="0" step="0.01" required></label>
           <label class="campo">Vencimento (dia do mês)<input name="vencimento" type="number" min="1" max="28" value="10"></label>
           <label class="campo">Vale desconto PV (20% na 1ª mensalidade)<select name="vale"><option value="nao">Não</option><option value="sim">Sim</option></select></label>
           <label class="campo">Início<input name="inicio" type="date" value="2027-01-01"></label>
@@ -128,10 +137,13 @@
         <div class="card">
           <h2>Dados do contrato</h2>
           <dl class="kv" id="det-kv" style="margin-top:14px"></dl>
-          <div id="det-linkbox" hidden><p class="sub" style="margin-top:18px">Link de assinatura (envie no WhatsApp do responsável)</p><div class="linkbox"><input id="det-link" readonly><button class="btn sm" id="det-copiar" type="button">Copiar</button></div></div>
+          <div id="det-linkbox" hidden><p class="sub" style="margin-top:18px">Link de assinatura (envie no WhatsApp do responsável)</p><div class="linkbox"><input id="det-link" readonly><button class="btn sm" id="det-copiar" type="button">Copiar</button><button class="btn or sm" id="det-whats" type="button">Enviar no WhatsApp</button></div></div>
           <div class="facts">
             <button class="btn" id="det-gerar" type="button">Gerar link de assinatura</button>
             <button class="btn ghost" id="det-editar" type="button">Editar</button>
+            <button class="btn ghost" id="det-ficha" type="button">Editar ficha</button>
+            <button class="btn ghost" id="det-emerg" type="button">Emergência</button>
+            <button class="btn ghost" id="det-mapa" type="button">Ver no mapa</button>
             <button class="btn ghost" id="det-pdf" type="button">Baixar PDF</button>
             <button class="link" id="det-cancelar" type="button">Cancelar contrato</button>
           </div>
@@ -145,12 +157,26 @@
         <div><h1>Financeiro 2027</h1><p class="sub">Clique no mês para registrar o pagamento, ou no nome do responsável para ver o extrato.</p></div>
         <div class="acts"><button class="btn ghost" id="fin-exportar" type="button">Exportar planilha</button></div>
       </div>
+      <div class="filtros"><button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button></div>
       <div class="stats">
         <div class="stat"><div class="lbl">Recebido no ano</div><b class="ok" id="fin-recebido">R$ 0,00</b><small id="fin-formas">Dinheiro R$ 0,00 · Pix R$ 0,00</small></div>
         <div class="stat"><div class="lbl">Recebido este mês</div><b id="fin-mes">R$ 0,00</b><small id="fin-mes-nome"></small></div>
         <div class="stat"><div class="lbl">Em aberto no ano</div><b id="fin-aberto">R$ 0,00</b></div>
         <div class="stat"><div class="lbl">Atrasados</div><b class="warn" id="fin-atrasados">0</b><small id="fin-atrasados-valor">R$ 0,00</small></div>
       </div>
+
+      <div class="card grafico-card" id="fin-grafico-card" hidden>
+        <div class="grafico-topo"><h2>Mês a mês</h2><p class="legenda"><span><i class="esp"></i>Esperado</span><span><i class="d"></i>Recebido em dinheiro</span><span><i class="p"></i>Recebido no Pix</span></p></div>
+        <p class="sub">Por mês de referência da mensalidade: um pagamento de março feito em abril conta em março. A porcentagem embaixo é quanto do esperado já entrou.</p>
+        <div id="fin-grafico"></div>
+      </div>
+
+      <div id="fin-bloco-lembretes" hidden>
+        <div class="secao"><h2>Lembretes de hoje <span id="fin-lembretes-qtd" style="color:var(--warn)"></span></h2></div>
+        <p class="sub" style="margin:-4px 0 10px">Mensalidades que vencem de hoje até daqui a <span id="fin-dias-lembrete"></span> dias.</p>
+        <div class="tabela atrasos"><table><thead><tr><th>Responsável</th><th>Criança</th><th>Mês</th><th>Valor</th><th>Vence</th><th></th></tr></thead><tbody id="tab-lembretes"></tbody></table></div>
+      </div>
+
       <div class="aviso-venc" id="fin-proximos" hidden></div>
 
       <div id="fin-bloco-atrasos" hidden>
@@ -169,7 +195,19 @@
 
     <section class="screen" id="tela-responsaveis">
       <div class="head"><div><h1>Responsáveis</h1><p class="sub">Quem assina os contratos. Um responsável pode ter mais de uma criança.</p></div></div>
-      <div class="tabela"><table><thead><tr><th>Responsável</th><th>Contato</th><th>Criança(s)</th><th>Contratos</th><th></th></tr></thead><tbody id="tab-resp"></tbody></table></div>
+      <div class="filtros"><button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button></div>
+      <div class="tabela"><table><thead><tr><th>Responsável</th><th>Contato</th><th>Criança · turma · contrato</th><th></th></tr></thead><tbody id="tab-resp"></tbody></table></div>
+    </section>
+
+    <section class="screen" id="tela-emergencia">
+      <div class="head">
+        <div><h1>Emergência</h1><p class="sub">Saúde, contatos e quem pode buscar cada criança. Toque no nome para abrir.</p></div>
+        <div class="acts"><a class="btn or" href="tel:192">Ligar SAMU 192</a></div>
+      </div>
+      <div class="filtros"><button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button></div>
+      <div class="filtros"><input class="busca" id="emerg-busca" type="search" placeholder="Buscar criança ou responsável"></div>
+      <div class="aviso-venc" id="emerg-pendentes" hidden></div>
+      <div class="emerg-grade" id="emerg-lista"></div>
     </section>
 
   </main>
@@ -184,9 +222,9 @@
     <details class="privacidade">
       <summary>Como usamos seus dados</summary>
       <p><b>Quem cuida dos seus dados:</b> Van Escolar Tia Patrícia e Tio Vitor.</p>
-      <p><b>Quais dados guardamos:</b> nome, CPF, telefone e e-mail do responsável; nome e série da criança; endereço de embarque; e, na assinatura, a data e hora, o endereço de rede (IP) e a confirmação do código enviado por e-mail.</p>
-      <p><b>Para que usamos:</b> para formalizar e cumprir o contrato de transporte escolar, controlar as mensalidades e comprovar a assinatura.</p>
-      <p><b>Com quem compartilhamos:</b> não vendemos seus dados nem usamos para propaganda. Usamos serviços de tecnologia para guardar as informações e enviar e-mails (Supabase, Resend e Vercel).</p>
+      <p><b>Quais dados guardamos:</b> nome, CPF, telefone e e-mail do responsável; nome, série e data de nascimento da criança; endereço de embarque; as informações de saúde, alergias, contatos de emergência e pessoas autorizadas a buscar a criança, informadas pelo responsável conforme o contrato; e, na assinatura, a data e hora, o endereço de rede (IP) e a confirmação do código enviado por e-mail.</p>
+      <p><b>Para que usamos:</b> para formalizar e cumprir o contrato de transporte escolar, controlar as mensalidades e comprovar a assinatura. As informações de saúde e os contatos de emergência são usados só para cuidar da criança durante o transporte e agir rápido numa emergência, e ficam visíveis apenas para a equipe da van.</p>
+      <p><b>Com quem compartilhamos:</b> não vendemos seus dados nem usamos para propaganda. Usamos serviços de tecnologia para guardar as informações e enviar e-mails (Supabase, Resend e Vercel). Para organizar o trajeto da van, o endereço de embarque é localizado em serviços de mapas e rotas (OpenStreetMap, Google Maps e Waze).</p>
       <p><b>Por quanto tempo:</b> durante o contrato e, depois do fim, pelo prazo exigido por lei, para comprovação e obrigações legais.</p>
       <p><b>Seus direitos:</b> você pode pedir para ver, corrigir ou apagar seus dados pelo WhatsApp <a href="https://wa.me/5511996929358" target="_blank" rel="noopener">(11) 99692-9358</a> ou pelo e-mail <a href="mailto:tiapaty_2012@hotmail.com">tiapaty_2012@hotmail.com</a>.</p>
     </details>
@@ -194,6 +232,7 @@
       <label class="check"><input type="checkbox" name="aceite">Li o contrato inteiro e concordo com todas as cláusulas.</label>
       <label class="campo">Seu nome completo<input name="nome" autocomplete="name"></label>
       <label class="campo">CPF<input name="cpf" inputmode="numeric" placeholder="000.000.000-00"></label>
+      <div class="codigo-demo"><button class="btn ghost sm" id="ass-enviar" type="button">Receber código por e-mail</button><span id="ass-info" style="display:block;margin-top:8px"></span></div>
       <label class="campo">Código de 6 números recebido por e-mail<input name="codigo" inputmode="numeric" maxlength="6" placeholder="000000"></label>
       <p class="erro" id="erro-assinar"></p>
       <button class="btn or" type="submit">Assinar contrato</button>
@@ -216,7 +255,7 @@
       <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn" type="submit" id="pag-confirmar">Confirmar pagamento</button></div>
     </form>
     <div id="pag-pago" hidden>
-      <div class="facts"><button class="link" id="pag-desfazer" type="button">Desfazer pagamento</button><button class="btn" type="button" data-fechar>Fechar</button></div>
+      <div class="facts"><button class="btn or sm" id="recibo-wa" type="button">Enviar recibo no WhatsApp</button><button class="btn ghost sm" id="recibo-imp" type="button">Imprimir recibo</button><button class="link" id="pag-desfazer" type="button">Desfazer pagamento</button><button class="btn" type="button" data-fechar>Fechar</button></div>
     </div>
     <p class="erro" id="pag-erro"></p>
   </div>
@@ -230,6 +269,83 @@
     <div class="tabela"><table><thead><tr><th>Criança</th><th>Mês</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Pago em</th><th>Forma</th><th>Registrado por</th></tr></thead><tbody id="tab-extrato"></tbody></table></div>
     <div class="totais" id="ext-totais"></div>
     <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn" type="button" id="ext-imprimir">Imprimir ou salvar PDF</button></div>
+  </div>
+</div>
+
+<!-- ===== JANELA: FICHA DA CRIANÇA ===== -->
+<div class="modal-fundo" id="modal-ficha" hidden>
+  <div class="modal largo" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
+    <h2 id="ficha-titulo">Ficha da criança</h2>
+    <p class="sub" id="ficha-sub"></p>
+    <div class="info" id="ficha-info"></div>
+    <form id="form-ficha">
+      <div class="fgrid">
+        <label class="campo">Criança<input name="crianca" required></label>
+        <label class="campo">Série<select name="serie" required></select></label>
+        <div><span class="campo">Turma</span><div class="rads"><label class="rad"><input type="radio" name="turma" value="Manhã" required>Manhã</label><label class="rad"><input type="radio" name="turma" value="Tarde">Tarde</label></div></div>
+        <label class="campo">Bairro<input name="bairro"></label>
+        <label class="campo full">Endereço de embarque<input name="endereco"></label>
+        <label class="campo">WhatsApp do responsável<input name="tel" type="tel"></label>
+        <label class="campo">E-mail do responsável<input name="email" type="email" required></label>
+      </div>
+      <h3 class="ficha-sec">Saúde e segurança</h3>
+      <div class="fgrid">
+        <label class="campo">Data de nascimento<input name="nascimento" type="date"></label>
+        <div></div>
+        <label class="campo full">Alergias (alimentos, remédios, insetos…)<textarea name="alergias" placeholder="Ex.: amendoim e dipirona. Deixe em branco se não tiver."></textarea></label>
+        <label class="campo full">Problemas de saúde e cuidados especiais<textarea name="saude" placeholder="Ex.: asma, a bombinha fica na mochila"></textarea></label>
+        <label class="campo">Contato de emergência 1 (nome e parentesco)<input name="emerg1_nome" placeholder="Ex.: Maria, avó"></label>
+        <label class="campo">Telefone do contato 1<input name="emerg1_tel" type="tel" placeholder="(11) 9 0000-0000"></label>
+        <label class="campo">Contato de emergência 2 (nome e parentesco)<input name="emerg2_nome" placeholder="Ex.: João, tio"></label>
+        <label class="campo">Telefone do contato 2<input name="emerg2_tel" type="tel" placeholder="(11) 9 0000-0000"></label>
+        <label class="campo full">Pessoas autorizadas a buscar na volta (uma por linha)<textarea name="autorizados" placeholder="Ex.: Ana Souza, madrinha"></textarea></label>
+        <label class="check full"><input type="checkbox" name="desce_sozinho">Tem autorização por escrito do responsável para descer sem ninguém esperando (Cláusula 10, § 2º)</label>
+      </div>
+      <p class="erro" id="ficha-erro"></p>
+      <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn" type="submit" id="ficha-salvar">Salvar alterações</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== JANELA: EMERGÊNCIA ===== -->
+<div class="modal-fundo" id="modal-emerg" hidden>
+  <div class="modal largo" role="dialog" aria-modal="true" aria-labelledby="emerg-titulo">
+    <h2 id="emerg-titulo">Emergência</h2>
+    <p class="sub" id="emerg-sub"></p>
+    <div id="emerg-corpo"></div>
+    <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn ghost" id="emerg-ficha" type="button">Editar ficha</button><a class="btn or" href="tel:192">Ligar SAMU 192</a></div>
+  </div>
+</div>
+
+<!-- ===== JANELA: MAPA DO ENDEREÇO ===== -->
+<div class="modal-fundo" id="modal-mapa" hidden>
+  <div class="modal largo" role="dialog" aria-modal="true" aria-labelledby="mapa-titulo">
+    <h2 id="mapa-titulo">Endereço de embarque</h2>
+    <p class="sub" id="mapa-sub"></p>
+    <div class="mapa"><iframe id="mapa-frame" title="Mapa do endereço de embarque" loading="lazy" allowfullscreen></iframe></div>
+    <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><a class="btn ghost" id="mapa-waze" target="_blank" rel="noopener">Abrir no Waze</a><a class="btn" id="mapa-google" target="_blank" rel="noopener">Abrir no Google Maps</a></div>
+  </div>
+</div>
+
+<!-- ===== JANELA: EDITAR PERFIL ===== -->
+<div class="modal-fundo" id="modal-perfil" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="perfil-titulo">
+    <h2 id="perfil-titulo">Editar perfil</h2>
+    <p class="sub">Como você aparece na barra do painel.</p>
+    <form id="form-perfil">
+      <div class="foto-linha">
+        <span class="avatar grande" id="perfil-preview"></span>
+        <div>
+          <label class="btn ghost sm" for="perfil-foto">Escolher foto</label>
+          <button class="link" id="perfil-remover" type="button" style="margin-left:10px">Remover foto</button>
+          <input id="perfil-foto" type="file" accept="image/*" hidden>
+          <p class="sub">A foto é cortada em quadrado e reduzida para 96 px (uns 5 KB).</p>
+        </div>
+      </div>
+      <label class="campo" style="margin-top:16px">Como quer ser chamado(a)<input name="nome" maxlength="40" autocomplete="nickname"></label>
+      <p class="erro" id="perfil-erro"></p>
+      <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn" type="submit" id="perfil-salvar">Salvar</button></div>
+    </form>
   </div>
 </div>
 

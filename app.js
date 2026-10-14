@@ -1,11 +1,14 @@
 /* =================== VAN PV · painel conectado ao banco (Supabase) ===================
    Os dados ficam no banco. O navegador guarda só a sessão de login.
    A assinatura online usa a Edge Function "assinatura" no Supabase. */
-const LUGARES = 23, ANO = 2027, ASSINATURA_ATIVA = true; /* LUGARES = lugares por turma */
-const DIAS_LEMBRETE = 3; /* lembrar mensalidades que vencem de hoje até daqui a X dias */
+const LUGARES = 23, ANO = 2027; /* LUGARES = lugares por turma */
+const DIAS_LEMBRETE = 3;     /* lembrar mensalidades que vencem de hoje até daqui a X dias */
+const DIAS_ANIVERSARIO = 7;  /* mostrar aniversários de hoje até daqui a X dias */
 const SERIES = ['Pré', '1º ano', '2º ano', '3º ano', '4º ano', '5º ano', '6º ano', '7º ano', '8º ano', '9º ano', '1ª série do Ensino Médio', '2ª série do Ensino Médio', '3ª série do Ensino Médio'];
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const MESES_LONGO = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+/* Campos de saúde e segurança da ficha (colunas da tabela "criancas") */
+const CAMPOS_SAUDE = ['alergias', 'saude', 'emerg1_nome', 'emerg1_tel', 'emerg2_nome', 'emerg2_tel', 'autorizados'];
 
 /* ---------- link de "esqueci minha senha" ----------
    O link do e-mail chega com "type=recovery" no endereço. Lemos isso ANTES de criar a conexão,
@@ -31,6 +34,14 @@ const fmtDia = s => s ? s.split('-').reverse().join('/') : '—';
 const diasAntes = (iso, n) => { if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() - n); return d.toLocaleDateString('sv-SE'); };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const primeiroNome = s => (s || '').trim().split(' ')[0];
+/* Idade em anos completos hoje, a partir de "aaaa-mm-dd" */
+function idade(nasc) {
+  if (!nasc) return null;
+  const [a, m, d] = nasc.split('-').map(Number), h = new Date();
+  let i = h.getFullYear() - a;
+  if (h.getMonth() + 1 < m || (h.getMonth() + 1 === m && h.getDate() < d)) i--;
+  return i;
+}
 let tt; function toast(m) { const el = document.getElementById('toast'); el.textContent = m; el.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => el.classList.remove('on'), 3200); }
 function erroLogin(m) { document.getElementById('erro-login').textContent = m || ''; }
 function traduzErro(e) {
@@ -39,6 +50,8 @@ function traduzErro(e) {
   if (/jwt|token.*expired/i.test(m)) return 'Sua sessão expirou. Saia e entre de novo.';
   if (/permission denied|row-level security/i.test(m)) return 'Sem permissão para esta ação.';
   if (/mensalidade_paga_completa/i.test(m)) return 'Informe a forma e a data do pagamento.';
+  if (/turma_lotada/i.test(m)) return 'A turma lotou enquanto você preenchia: alguém gerou um link agora há pouco. Escolha a outra turma ou salve como rascunho.';
+  if (/could not find the .* column|column .* does not exist/i.test(m)) return 'O banco ainda não tem os campos novos. Rode o SQL desta atualização no Supabase.';
   return m;
 }
 const linkAssinatura = c => location.href.split('#')[0] + '#assinar/' + c.token;
@@ -53,6 +66,12 @@ function linkWa(tel, msg) {
   if (n.length === 10 || n.length === 11) n = '55' + n;
   if (!/^55\d{10,11}$/.test(n)) return null;
   return 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg);
+}
+/* Link tel: para ligar direto do celular */
+function telLink(tel) {
+  let n = soDigitos(tel);
+  if (n.length === 10 || n.length === 11) n = '55' + n;
+  return /^55\d{10,11}$/.test(n) ? 'tel:+' + n : (n ? 'tel:' + n : '');
 }
 /* Devolve true se conseguiu abrir o WhatsApp */
 function abrirConversa(tel, msg) {
@@ -69,9 +88,9 @@ async function copiar(t) {
 function irPara(h) { if (location.hash === h) rota(); else location.hash = h; }
 
 /* ---------- estado (o que está carregado na tela) ---------- */
-let DB = { contratos: [] }, usuario = null, acessoOk = false, carregado = false;
+let DB = { contratos: [] }, usuario = null, acessoOk = false, carregado = false, perfil = { nome: '', foto: '' };
 const achar = id => DB.contratos.find(c => c.id === id);
-function limparEstado() { DB.contratos = []; usuario = null; acessoOk = false; carregado = false; atualizarSelo(); }
+function limparEstado() { DB.contratos = []; usuario = null; acessoOk = false; carregado = false; perfil = { nome: '', foto: '' }; atualizarSelo(); }
 
 /* Converte uma linha do banco no formato que as telas usam */
 function deBanco(r) {
@@ -81,7 +100,10 @@ function deBanco(r) {
   return {
     id: r.id, token: r.token, status: r.status, criadoEm: r.criado_em, enviadoEm: r.enviado_em,
     responsavel: { id: resp.id, nome: resp.nome || '', cpf: resp.cpf || '', tel: resp.telefone || '', email: resp.email || '' },
-    crianca: { nome: cri.nome || '', serie: cri.serie || '' },
+    crianca: {
+      id: cri.id, nome: cri.nome || '', serie: cri.serie || '', nascimento: cri.nascimento || null, desce_sozinho: !!cri.desce_sozinho,
+      ...Object.fromEntries(CAMPOS_SAUDE.map(k => [k, cri[k] || '']))
+    },
     turma: r.turma, endereco: r.endereco || '', bairro: r.bairro || '', mensalidade: Number(r.mensalidade),
     vencimento: r.vencimento, inicio: r.inicio, fim: r.fim, vale: r.vale_desconto, obs: r.observacoes || '',
     assinatura: a ? { nome: a.nome, cpf: a.cpf, em: a.assinado_em, ip: a.ip || '—', hash: a.hash_documento, pdf: a.pdf_caminho } : null,
@@ -94,6 +116,24 @@ async function recarregar() {
   DB.contratos = data.map(deBanco); carregado = true; atualizarSelo(); return true;
 }
 
+/* ---------- filtro de turma e ordem alfabética (vale para todas as abas ao mesmo tempo) ---------- */
+let turmaFiltro = ''; /* '' = as duas turmas */
+const naTurma = c => !turmaFiltro || c.turma === turmaFiltro;
+const porNome = (a, b) => (a || '').localeCompare(b || '', 'pt-BR', { sensitivity: 'base' });
+const ordemAlfabetica = (a, b) => porNome(a.responsavel.nome, b.responsavel.nome) || porNome(a.crianca.nome, b.crianca.nome);
+function redesenharLista() {
+  const tela = location.hash.slice(1).split('/')[0];
+  if (tela === 'financeiro') renderFinanceiro();
+  else if (tela === 'responsaveis') renderResponsaveis();
+  else if (tela === 'emergencia') renderEmergencia();
+  else renderContratos();
+}
+document.querySelectorAll('.chip[data-turma]').forEach(ch => ch.addEventListener('click', () => {
+  turmaFiltro = ch.dataset.turma;
+  document.querySelectorAll('.chip[data-turma]').forEach(x => x.classList.toggle('on', x.dataset.turma === turmaFiltro));
+  redesenharLista();
+}));
+
 /* ---------- dados e números do contrato (PREENCHER / CONFERIR) ----------
    O CPF da Tia Patrícia NÃO fica aqui, porque este arquivo é público.
    Ele entra só na via que o responsável recebe pelo link de assinatura (montada no servidor). */
@@ -103,7 +143,7 @@ const CONTRATADA = {
   whatsapp: '(11) 99692-9358',
   email: 'tiapaty_2012@hotmail.com'
 };
-const MES_RESCISAO = '[MÊS]';     /* 2º mês em que dá para desistir sem multa */
+const MES_RESCISAO = '[MÊS]';     /* PREENCHER: 2º mês em que dá para desistir sem multa (ex.: 'fevereiro'). Mude também na Edge Function. */
 const REAJUSTE = 0.10;            /* 10% a cada 6 meses (vale de julho em diante) */
 const ESPERA_MIN = 3;             /* minutos que a van espera no ponto */
 const DIAS_ATRASO_RESCISAO = 60;  /* atraso no pagamento que permite encerrar o contrato */
@@ -203,15 +243,16 @@ async function rota() {
     if (error) { mostrar('tela-login'); erroLogin(traduzErro(error)); return; }
     if (!data) { await sb.auth.signOut(); limparEstado(); mostrar('tela-login'); erroLogin('Este login não tem acesso ao painel.'); return; }
     acessoOk = true;
+    await carregarPerfil();
   }
   mostrar('app');
-  document.getElementById('quem-email').textContent = usuario.email;
+  renderPerfil();
   const grupo = (tela === 'novo' || tela === 'contrato') ? 'contratos' : tela;
   document.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === grupo));
-  const mapa = { contratos: 'tela-contratos', novo: 'tela-novo', contrato: 'tela-detalhe', financeiro: 'tela-financeiro', responsaveis: 'tela-responsaveis' };
+  const mapa = { contratos: 'tela-contratos', novo: 'tela-novo', contrato: 'tela-detalhe', financeiro: 'tela-financeiro', responsaveis: 'tela-responsaveis', emergencia: 'tela-emergencia' };
   const alvo = mapa[tela] || 'tela-contratos';
   document.querySelectorAll('#app .screen').forEach(s => s.classList.toggle('active', s.id === alvo));
-  const listas = ['tela-contratos', 'tela-financeiro', 'tela-responsaveis'];
+  const listas = ['tela-contratos', 'tela-financeiro', 'tela-responsaveis', 'tela-emergencia'];
   if (!carregado) carregando();
   if (!carregado || listas.includes(alvo)) { if (!(await recarregar())) return; }
   if (alvo === 'tela-contratos') renderContratos();
@@ -219,6 +260,7 @@ async function rota() {
   if (alvo === 'tela-detalhe') telaDetalhe(param);
   if (alvo === 'tela-financeiro') renderFinanceiro();
   if (alvo === 'tela-responsaveis') renderResponsaveis();
+  if (alvo === 'tela-emergencia') renderEmergencia();
   window.scrollTo(0, 0);
 }
 addEventListener('hashchange', rota);
@@ -312,23 +354,22 @@ function erroLotada(turma, ignorarId) {
 let filtro = 'todos', busca = '';
 const rotulo = c => ({ assinado: 'Assinado ' + fmtData(c.assinatura && c.assinatura.em), aguardando: 'Aguardando assinatura', rascunho: 'Rascunho', cancelado: 'Cancelado' })[c.status];
 function renderContratos() {
-  const cs = DB.contratos, n = s => cs.filter(c => c.status === s).length;
+  const cs = DB.contratos.filter(naTurma), n = s => cs.filter(c => c.status === s).length;
   document.getElementById('st-assinado').textContent = n('assinado');
   document.getElementById('st-aguardando').textContent = n('aguardando');
   document.getElementById('st-rascunho').textContent = n('rascunho');
-  /* Cartão de lugares: o número sobe sozinho a cada contrato gerado */
-  const om = ocupacao('Manhã'), ot = ocupacao('Tarde'), stV = document.getElementById('st-vagas'), card = stV.closest('.stat');
-  card.querySelector('.lbl').textContent = 'Lugares ocupados (manhã · tarde)';
+  /* Cartão de lugares: sempre mostra as duas turmas, com ou sem filtro */
+  const om = ocupacao('Manhã'), ot = ocupacao('Tarde'), stV = document.getElementById('st-vagas');
   stV.textContent = `M ${om.ocupados}/${LUGARES} · T ${ot.ocupados}/${LUGARES}`;
   stV.className = (!om.livres || !ot.livres) ? 'warn' : '';
-  let det = card.querySelector('small'); if (!det) { det = document.createElement('small'); card.appendChild(det); }
   const reservados = om.aguardando + ot.aguardando;
-  det.textContent = `Livres: manhã ${om.livres} · tarde ${ot.livres}` + (reservados ? ` · ${reservados} reservado(s) aguardando assinatura` : '');
+  document.getElementById('st-vagas-det').textContent = `Livres: manhã ${om.livres} · tarde ${ot.livres}` + (reservados ? ` · ${reservados} reservado(s) aguardando assinatura` : '');
   const b = busca.toLowerCase();
-  const lista = cs.filter(c => (filtro === 'todos' || c.status === filtro) && (!b || (c.responsavel.nome + ' ' + c.crianca.nome + ' ' + c.bairro).toLowerCase().includes(b)));
+  const lista = cs.filter(c => (filtro === 'todos' || c.status === filtro) && (!b || (c.responsavel.nome + ' ' + c.crianca.nome + ' ' + c.bairro).toLowerCase().includes(b))).sort(ordemAlfabetica);
   const acao = c => c.status === 'aguardando' ? `<button class="btn or sm" data-whats="${c.id}" type="button">WhatsApp</button> <button class="btn ghost sm" data-copiar="${c.id}" type="button">Copiar mensagem</button>` : c.status === 'assinado' ? `<button class="btn ghost sm" data-pdf="${c.id}" type="button">PDF</button>` : c.status === 'rascunho' ? `<button class="btn ghost sm" data-editar="${c.id}" type="button">Editar</button>` : '';
-  const vazio = cs.length ? 'Nenhum contrato aqui.' : 'Nenhum contrato ainda. Clique em "+ Novo contrato" para começar.';
+  const vazio = DB.contratos.length ? 'Nenhum contrato aqui.' : 'Nenhum contrato ainda. Clique em "+ Novo contrato" para começar.';
   document.getElementById('tab-contratos').innerHTML = lista.length ? lista.map(c => `<tr class="clicavel" data-id="${c.id}"><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}<small>${esc(c.crianca.serie)}</small></td><td>${esc(c.turma)}</td><td>${fmtBRL(c.mensalidade)}</td><td><span class="tag ${c.status}">${rotulo(c)}</span></td><td style="white-space:nowrap">${acao(c)}</td></tr>`).join('') : `<tr><td colspan="6" class="vazio">${vazio}</td></tr>`;
+  renderAniversarios();
 }
 document.getElementById('tab-contratos').addEventListener('click', e => {
   const b = e.target.closest('button');
@@ -401,10 +442,11 @@ document.getElementById('salvar-rascunho').addEventListener('click', () => grava
 let atual = null;
 function telaDetalhe(id) {
   const c = achar(id); if (!c) { irPara('#contratos'); return; } atual = c;
-  document.getElementById('det-titulo').textContent = c.responsavel.nome + ' · ' + c.crianca.nome;
+  const k = c.crianca, anos = idade(k.nascimento);
+  document.getElementById('det-titulo').textContent = c.responsavel.nome + ' · ' + k.nome;
   document.getElementById('det-status').innerHTML = `<span class="tag ${c.status}">${rotulo(c)}</span>`;
-  const kv = [['Responsável', c.responsavel.nome], ['CPF', fmtCPF(c.responsavel.cpf)], ['WhatsApp', c.responsavel.tel], ['E-mail', c.responsavel.email], ['Criança', c.crianca.nome], ['Série em 2027', c.crianca.serie], ['Turma', c.turma], ['Endereço', c.endereco + (c.bairro ? ', ' + c.bairro : '')], ['Mensalidade', fmtBRL(c.mensalidade) + ' · vence dia ' + c.vencimento], ['Vigência', fmtDia(c.inicio) + ' a ' + fmtDia(c.fim)], ['Vale desconto PV', c.vale ? 'Sim, 20% na 1ª mensalidade' : 'Não'], ['Observações', c.obs || '—']];
-  document.getElementById('det-kv').innerHTML = kv.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  const kv = [['Responsável', c.responsavel.nome], ['CPF', fmtCPF(c.responsavel.cpf)], ['WhatsApp', c.responsavel.tel], ['E-mail', c.responsavel.email], ['Criança', k.nome], ['Série em 2027', k.serie], ['Nascimento', k.nascimento ? fmtDia(k.nascimento) + (anos !== null ? ' · ' + anos + ' anos' : '') : '—'], ['Turma', c.turma], ['Endereço', c.endereco + (c.bairro ? ', ' + c.bairro : '')], ['Mensalidade', fmtBRL(c.mensalidade) + ' · vence dia ' + c.vencimento], ['Vigência', fmtDia(c.inicio) + ' a ' + fmtDia(c.fim)], ['Vale desconto PV', c.vale ? 'Sim, 20% na 1ª mensalidade' : 'Não'], ['Observações', c.obs || '—']];
+  document.getElementById('det-kv').innerHTML = kv.map(([chave, v]) => `<dt>${chave}</dt><dd>${esc(v)}</dd>`).join('');
   const temLink = c.status === 'aguardando' || c.status === 'assinado';
   document.getElementById('det-linkbox').hidden = !temLink; document.getElementById('det-link').value = temLink ? linkAssinatura(c) : '';
   const a = c.assinatura;
@@ -413,7 +455,9 @@ function telaDetalhe(id) {
   let marcouAtual = false;
   document.getElementById('det-tl').innerHTML = passos.map(([t, s, feito], i) => { const cls = feito ? 'feito' : (!marcouAtual ? (marcouAtual = true, 'atual') : ''); return `<li class="${cls}"><i>${feito ? '✓' : i + 1}</i><div>${t}<small>${esc(s)}</small></div></li>`; }).join('');
   const mostra = (id, sim) => { document.getElementById(id).hidden = !sim; };
+  const ativo = c.status === 'aguardando' || c.status === 'assinado';
   mostra('det-gerar', c.status === 'rascunho'); mostra('det-editar', c.status === 'rascunho'); mostra('det-copiar', c.status === 'aguardando'); mostra('det-whats', c.status === 'aguardando'); mostra('det-pdf', c.status !== 'rascunho'); mostra('det-cancelar', c.status === 'rascunho' || c.status === 'aguardando');
+  mostra('det-ficha', ativo); mostra('det-emerg', ativo); mostra('det-mapa', !!c.endereco);
 }
 /* Atualiza o contrato só se ele ainda estiver num dos status permitidos */
 async function atualizarContrato(id, campos, statusPermitidos) {
@@ -432,11 +476,7 @@ document.getElementById('det-gerar').addEventListener('click', async e => {
 });
 document.getElementById('det-editar').addEventListener('click', () => irPara('#novo/' + atual.id));
 document.getElementById('det-copiar').addEventListener('click', () => copiar(mensagemWhatsApp(atual)));
-/* Botão "Enviar no WhatsApp", criado ao lado do "Copiar" */
-const detWhats = document.createElement('button');
-detWhats.className = 'btn or sm'; detWhats.id = 'det-whats'; detWhats.type = 'button'; detWhats.textContent = 'Enviar no WhatsApp';
-document.getElementById('det-copiar').after(detWhats);
-detWhats.addEventListener('click', () => abrirWhatsApp(atual));
+document.getElementById('det-whats').addEventListener('click', () => abrirWhatsApp(atual));
 document.getElementById('det-pdf').addEventListener('click', () => abrirPDF(atual));
 document.getElementById('det-cancelar').addEventListener('click', async () => {
   if (!confirm('Cancelar este contrato?')) return;
@@ -467,12 +507,6 @@ const FN_URL = (CFG.supabaseUrl || '') + '/functions/v1/assinatura';
 const elA = id => document.getElementById(id);
 const formA = elA('form-assinar');
 let tokenAtual = '';
-
-/* Botão "Receber código" e aviso, criados uma vez acima do campo do código */
-const boxCodigo = document.createElement('div');
-boxCodigo.className = 'codigo-demo';
-boxCodigo.innerHTML = '<button class="btn ghost sm" id="ass-enviar" type="button">Receber código por e-mail</button><span id="ass-info" style="display:block;margin-top:8px"></span>';
-formA.elements.codigo.closest('label').before(boxCodigo);
 
 async function chamarAssinatura(dados) {
   try {
@@ -530,7 +564,7 @@ formA.addEventListener('submit', async e => {
   window.scrollTo(0, 0);
 });
 
-/* ---------- financeiro (fase 2) ---------- */
+/* ---------- financeiro ---------- */
 const pegar = id => document.getElementById(id);
 let finFiltro = 'todos', finBusca = '';
 const hojeMeioDia = () => { const d = new Date(); d.setHours(12, 0, 0, 0); return d; };
@@ -560,17 +594,14 @@ const lembretesJanela = () => todasMensalidades().filter(({ m }) => { if (m.pago
 function mensagemLembrete(c, m) {
   return `Olá, ${primeiroNome(c.responsavel.nome)}! Lembrete: a mensalidade de ${MESES_LONGO[m.mes - 1]} do transporte escolar de ${c.crianca.nome} (${fmtBRL(m.valor)}) vence em ${fmtDia(m.vencimento).slice(0, 5)}. Se já pagou, desconsidere esta mensagem.`;
 }
-/* Número de lembretes pendentes ao lado do nome da aba "Financeiro" */
+/* Número de lembretes pendentes ao lado do nome da aba "Financeiro" (conta as duas turmas) */
 function atualizarSelo() {
   const aba = document.querySelector('.tabs a[data-tab="financeiro"]'); if (!aba) return;
   const n = DB.contratos.length ? lembretesJanela().filter(({ m }) => !m.lembrete_em).length : 0;
   aba.textContent = 'Financeiro' + (n ? ` (${n})` : '');
 }
-/* Bloco "Lembretes de hoje", criado no topo do Financeiro */
-const blocoLembretes = document.createElement('div');
-blocoLembretes.id = 'fin-bloco-lembretes'; blocoLembretes.hidden = true;
-blocoLembretes.innerHTML = `<div class="secao"><h2>Lembretes de hoje <span id="fin-lembretes-qtd" style="color:var(--warn)"></span></h2></div><p class="sub" style="margin:-4px 0 10px">Mensalidades que vencem de hoje até daqui a ${DIAS_LEMBRETE} dias.</p><div class="tabela atrasos"><table><thead><tr><th>Responsável</th><th>Criança</th><th>Mês</th><th>Valor</th><th>Vence</th><th></th></tr></thead><tbody id="tab-lembretes"></tbody></table></div>`;
-pegar('fin-proximos').before(blocoLembretes);
+/* O bloco "Lembretes de hoje" está no index.html; aqui só preenchemos o número de dias */
+pegar('fin-dias-lembrete').textContent = DIAS_LEMBRETE;
 
 /* ---------- recibo de pagamento ---------- */
 /* Número do recibo: ano-mês-6 primeiros caracteres do código da mensalidade (único e fixo) */
@@ -608,8 +639,41 @@ function imprimirRecibo(c, m) {
   w.document.close();
 }
 
+/* ---------- gráfico mês a mês (esperado x recebido, dinheiro e Pix) ---------- */
+const abrevBRL = v => v >= 1000 ? 'R$ ' + (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: v >= 10000 ? 0 : 1 }) + ' mil' : 'R$ ' + Math.round(v);
+function renderGrafico(todas) {
+  const card = pegar('fin-grafico-card');
+  card.hidden = !todas.length; if (!todas.length) return;
+  const meses = MESES.map(() => ({ esperado: 0, pix: 0, dinheiro: 0 }));
+  todas.forEach(({ m }) => {
+    const x = meses[m.mes - 1]; if (!x) return;
+    const v = Number(m.valor) || 0;
+    x.esperado += v;
+    if (m.pago) { if (m.forma_pagamento === 'pix') x.pix += v; else x.dinheiro += v; }
+  });
+  const W = 720, H = 250, topo = 14, base = 196, esq = 64, dir = 8;
+  const max = Math.max(1, ...meses.map(x => Math.max(x.esperado, x.pix + x.dinheiro)));
+  const larg = (W - esq - dir) / 12, barra = Math.min(34, larg * 0.6);
+  const y = v => base - (v / max) * (base - topo);
+  const mesAtual = new Date().getFullYear() === ANO ? new Date().getMonth() : -1;
+  const f1 = n => n.toFixed(1);
+  let s = '';
+  [0, max / 2, max].forEach(v => { s += `<line class="g-linha" x1="${esq}" x2="${W - dir}" y1="${f1(y(v))}" y2="${f1(y(v))}"/><text class="g-eixo" x="${esq - 8}" y="${f1(y(v) + 4)}" text-anchor="end">${abrevBRL(v)}</text>`; });
+  meses.forEach((x, i) => {
+    const cx = esq + i * larg + (larg - barra) / 2, meio = cx + barra / 2, rec = x.pix + x.dinheiro;
+    s += `<g><title>${MESES_LONGO[i]}: esperado ${fmtBRL(x.esperado)} · recebido ${fmtBRL(rec)} (dinheiro ${fmtBRL(x.dinheiro)} · Pix ${fmtBRL(x.pix)})</title>`;
+    s += `<rect class="g-esperado" x="${f1(cx)}" y="${f1(y(x.esperado))}" width="${f1(barra)}" height="${f1(base - y(x.esperado))}" rx="4"/>`;
+    s += `<rect class="g-dinheiro" x="${f1(cx)}" y="${f1(y(x.dinheiro))}" width="${f1(barra)}" height="${f1(base - y(x.dinheiro))}"/>`;
+    s += `<rect class="g-pix" x="${f1(cx)}" y="${f1(y(rec))}" width="${f1(barra)}" height="${f1(y(x.dinheiro) - y(rec))}"/>`;
+    s += `<rect x="${f1(esq + i * larg)}" y="${topo}" width="${f1(larg)}" height="${H - topo}" fill="transparent"/></g>`;
+    s += `<text class="g-eixo${i === mesAtual ? ' g-atual' : ''}" x="${f1(meio)}" y="${base + 18}" text-anchor="middle">${MESES[i]}</text>`;
+    if (x.esperado) s += `<text class="g-pct" x="${f1(meio)}" y="${base + 36}" text-anchor="middle">${Math.round(rec / x.esperado * 100)}%</text>`;
+  });
+  pegar('fin-grafico').innerHTML = `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Recebido e esperado por mês">${s}</svg>`;
+}
+
 function renderFinanceiro() {
-  const todas = todasMensalidades(), hoje = hojeMeioDia(), mesAtual = hojeISO().slice(0, 7);
+  const todas = todasMensalidades().filter(({ c }) => naTurma(c)), hoje = hojeMeioDia(), mesAtual = hojeISO().slice(0, 7);
   let dinheiro = 0, pix = 0, aberto = 0, recMes = 0, valorAtraso = 0;
   const atrasadas = [], proximas = [];
   todas.forEach(({ c, m }) => {
@@ -633,8 +697,11 @@ function renderFinanceiro() {
   pegar('fin-atrasados').textContent = atrasadas.length;
   pegar('fin-atrasados-valor').textContent = fmtBRL(valorAtraso);
 
+  /* Gráfico mês a mês */
+  renderGrafico(todas);
+
   /* Lembretes de hoje (pendentes primeiro, depois os já lembrados) */
-  const lemb = lembretesJanela().sort((a, b) => (!!a.m.lembrete_em - !!b.m.lembrete_em) || (vencDe(a.m) - vencDe(b.m)));
+  const lemb = lembretesJanela().filter(({ c }) => naTurma(c)).sort((a, b) => (!!a.m.lembrete_em - !!b.m.lembrete_em) || (vencDe(a.m) - vencDe(b.m)));
   const pendentes = lemb.filter(({ m }) => !m.lembrete_em).length;
   pegar('fin-bloco-lembretes').hidden = !lemb.length;
   pegar('fin-lembretes-qtd').textContent = lemb.length ? (pendentes ? `(${pendentes} para enviar)` : '(todos lembrados)') : '';
@@ -657,15 +724,15 @@ function renderFinanceiro() {
   pegar('fin-atrasos-qtd').textContent = atrasadas.length ? '(' + atrasadas.length + ')' : '';
   pegar('tab-atrasos').innerHTML = atrasadas.map(({ c, m }) => `<tr><td>${esc(c.responsavel.nome)}<small>${esc(c.responsavel.tel)}</small></td><td>${esc(c.crianca.nome)}</td><td>${esc(nomeMesAno(m))}<small>venceu ${fmtDia(m.vencimento)}</small></td><td>${fmtBRL(m.valor)}</td><td><span class="tag atrasado">${diasAtraso(m)} dia(s)</span></td><td><button class="btn sm" data-pag="${m.id}" type="button">Registrar pagamento</button> <button class="btn or sm" data-cobrar="${m.id}" type="button">Cobrar no WhatsApp</button></td></tr>`).join('');
 
-  /* Tabela de 12 meses */
-  const assinados = DB.contratos.filter(c => c.status === 'assinado'), b = finBusca.toLowerCase();
+  /* Tabela de 12 meses (ordem alfabética pelo responsável) */
+  const assinados = DB.contratos.filter(c => c.status === 'assinado' && naTurma(c)), b = finBusca.toLowerCase();
   const cs = assinados.filter(c => {
     const temAtraso = Object.values(c.mensalidades).some(estaAtrasada);
     if (finFiltro === 'atraso' && !temAtraso) return false;
     if (finFiltro === 'emdia' && temAtraso) return false;
     return !b || (c.responsavel.nome + ' ' + c.crianca.nome).toLowerCase().includes(b);
   });
-  const linhas = cs.map(c => {
+  const linhas = cs.sort(ordemAlfabetica).map(c => {
     let pagos = 0;
     const cels = MESES.map((nomeMes, i) => {
       const m = c.mensalidades[i + 1];
@@ -678,7 +745,7 @@ function renderFinanceiro() {
     }).join('');
     return `<tr><td><button class="linknome" data-extrato="${c.responsavel.id}" type="button">${esc(c.responsavel.nome)}</button><small>${esc(c.crianca.nome)} · ${esc(c.turma)} · ${fmtBRL(c.mensalidade)}</small></td>${cels}<td><b>${pagos}/12</b></td></tr>`;
   });
-  const vazio = assinados.length ? 'Nenhum contrato neste filtro.' : 'Nenhum contrato assinado ainda. As mensalidades aparecem aqui depois da assinatura.';
+  const vazio = DB.contratos.some(c => c.status === 'assinado') ? 'Nenhum contrato neste filtro.' : 'Nenhum contrato assinado ainda. As mensalidades aparecem aqui depois da assinatura.';
   pegar('tab-fin').innerHTML = linhas.length ? linhas.join('') : `<tr><td colspan="14" class="vazio">${vazio}</td></tr>`;
 }
 
@@ -706,7 +773,7 @@ document.querySelectorAll('.chip[data-ff]').forEach(ch => ch.addEventListener('c
 pegar('fin-busca').addEventListener('input', e => { finBusca = e.target.value; renderFinanceiro(); });
 pegar('fin-exportar').addEventListener('click', () => {
   const cab = ['Responsável', 'CPF', 'Criança', 'Turma', 'Mês', 'Vencimento', 'Valor', 'Situação', 'Pago em', 'Forma', 'Registrado por', 'Recibo'];
-  const linhas = todasMensalidades().map(({ c, m }) => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.crianca.nome, c.turma, nomeMesAno(m), fmtDia(m.vencimento), Number(m.valor).toFixed(2).replace('.', ','), m.pago ? 'Pago' : estaAtrasada(m) ? 'Atrasado' : 'A vencer', m.pago ? fmtDia(m.pago_em) : '', m.pago ? nomeForma(m.forma_pagamento) : '', m.pago_por_nome || '', m.pago ? numeroRecibo(m) : '']);
+  const linhas = todasMensalidades().map(({ c, m }) => [c.responsavel.nome, fmtCPF(c.responsavel.cpf), c.crianca.nome, c.turma, nomeMesAno(m), fmtDia(m.vencimento), Number(m.valor).toFixed(2).replace('.', ','), m.pago ? 'Pago' : estaAtrasada(m) ? 'Atrasado' : 'A vencer', m.pago ? fmtDia(m.pago_em) : '', m.pago ? nomeForma(m.forma_pagamento) : '', m.pago ? (m.pago_por_nome || '') : '', m.pago ? numeroRecibo(m) : '']);
   baixarCSV('financeiro-2027.csv', cab, linhas);
 });
 
@@ -720,15 +787,9 @@ addEventListener('keydown', e => { if (e.key === 'Escape') fecharModais(); });
 /* Registrar / desfazer pagamento */
 const formPag = pegar('form-pag');
 let pagAtual = null;
-/* Botões do recibo, criados dentro da janela, na área de "já pago" */
-const areaPago = pegar('pag-pago').querySelector('.facts');
-const bReciboImp = document.createElement('button');
-bReciboImp.className = 'btn ghost sm'; bReciboImp.type = 'button'; bReciboImp.textContent = 'Imprimir recibo';
-const bReciboWa = document.createElement('button');
-bReciboWa.className = 'btn or sm'; bReciboWa.type = 'button'; bReciboWa.textContent = 'Enviar recibo no WhatsApp';
-areaPago.prepend(bReciboImp); areaPago.prepend(bReciboWa);
-bReciboWa.addEventListener('click', () => { const x = pagAtual && acharMens(pagAtual.m.id); if (x && x.m.pago) abrirConversa(x.c.responsavel.tel, mensagemRecibo(x.c, x.m)); });
-bReciboImp.addEventListener('click', () => { const x = pagAtual && acharMens(pagAtual.m.id); if (x && x.m.pago) imprimirRecibo(x.c, x.m); });
+/* Botões do recibo (estão no index.html, na área de "já pago") */
+pegar('recibo-wa').addEventListener('click', () => { const x = pagAtual && acharMens(pagAtual.m.id); if (x && x.m.pago) abrirConversa(x.c.responsavel.tel, mensagemRecibo(x.c, x.m)); });
+pegar('recibo-imp').addEventListener('click', () => { const x = pagAtual && acharMens(pagAtual.m.id); if (x && x.m.pago) imprimirRecibo(x.c, x.m); });
 
 function abrirPagamento(mid) {
   const x = acharMens(mid); if (!x) return; pagAtual = x;
@@ -763,7 +824,7 @@ formPag.addEventListener('submit', async e => {
 });
 pegar('pag-desfazer').addEventListener('click', async () => {
   if (!pagAtual || !confirm('Desfazer este pagamento? O mês volta a ficar em aberto.')) return;
-  const { error } = await sb.from('mensalidades').update({ pago: false }).eq('id', pagAtual.m.id);
+  const { error } = await sb.from('mensalidades').update({ pago: false, forma_pagamento: null, pago_em: null }).eq('id', pagAtual.m.id);
   if (error) { pegar('pag-erro').textContent = traduzErro(error); return; }
   fecharModais(); await recarregar(); renderFinanceiro();
   toast('Pagamento desfeito.');
@@ -787,7 +848,7 @@ function abrirExtrato(respId) {
     const v = Number(m.valor), atr = estaAtrasada(m);
     if (m.pago) pago += v; else { abertoV += v; if (atr) atrasoV += v; }
     const sit = m.pago ? '<span class="tag pago">Pago</span>' : atr ? '<span class="tag atrasado">Atrasado</span>' : '<span class="tag aberto">A vencer</span>';
-    return `<tr><td>${esc(c.crianca.nome)}</td><td>${esc(MESES_LONGO[m.mes - 1])}</td><td>${fmtDia(m.vencimento)}</td><td>${fmtBRL(v)}</td><td>${sit}</td><td>${m.pago ? fmtDia(m.pago_em) : '—'}</td><td>${m.pago ? nomeForma(m.forma_pagamento) : '—'}</td><td>${esc(m.pago_por_nome || '—')}</td></tr>`;
+    return `<tr><td>${esc(c.crianca.nome)}</td><td>${esc(MESES_LONGO[m.mes - 1])}</td><td>${fmtDia(m.vencimento)}</td><td>${fmtBRL(v)}</td><td>${sit}</td><td>${m.pago ? fmtDia(m.pago_em) : '—'}</td><td>${m.pago ? nomeForma(m.forma_pagamento) : '—'}</td><td>${m.pago ? esc(m.pago_por_nome || '—') : '—'}</td></tr>`;
   }).join('');
   extratoAtual.totais = { pago, abertoV, atrasoV };
   pegar('ext-totais').innerHTML = `<span>Pago: <b>${fmtBRL(pago)}</b></span><span>Em aberto: <b>${fmtBRL(abertoV)}</b></span><span>Atrasado: <b style="color:var(--red)">${fmtBRL(atrasoV)}</b></span>`;
@@ -814,10 +875,31 @@ function agruparResponsaveis() {
   return porId;
 }
 function renderResponsaveis() {
-  const lista = Object.values(agruparResponsaveis());
-  document.getElementById('tab-resp').innerHTML = lista.length ? lista.map(x => `<tr><td>${esc(x.r.nome)}<small>CPF ${fmtCPF(x.r.cpf)}</small></td><td>${esc(x.r.tel)}<small>${esc(x.r.email)}</small></td><td>${esc([...x.filhos].join(', '))}</td><td>${x.status.map(s => `<span class="tag ${s}">${nomeStatus[s] || s}</span>`).join(' ')}</td><td><button class="link" data-apagar="${x.r.id}" type="button">Apagar cadastro</button></td></tr>`).join('') : '<tr><td colspan="5" class="vazio">Nenhum responsável cadastrado.</td></tr>';
+  const lista = Object.values(agruparResponsaveis())
+    .map(x => ({ ...x, contratos: x.contratos.filter(naTurma).sort((a, b) => porNome(a.crianca.nome, b.crianca.nome)) }))
+    .filter(x => x.contratos.length)
+    .sort((a, b) => porNome(a.r.nome, b.r.nome));
+  const linha = c => {
+    const ativo = c.status === 'aguardando' || c.status === 'assinado';
+    const acoes = [
+      c.endereco ? `<button class="link" data-mapa="${c.id}" type="button">Ver no mapa</button>` : '',
+      ativo ? `<button class="link" data-ficha="${c.id}" type="button">Editar ficha</button>` : '',
+      ativo ? `<button class="link" data-emerg="${c.id}" type="button">Emergência</button>` : ''
+    ].filter(Boolean).join(' · ');
+    const end = c.endereco ? c.endereco + (c.bairro ? ', ' + c.bairro : '') : 'Sem endereço de embarque';
+    return `<div class="filho"><button class="linknome" data-contrato="${c.id}" type="button">${esc(c.crianca.nome)}</button> · ${esc(c.turma)} <span class="tag ${c.status}">${nomeStatus[c.status] || c.status}</span><small>${esc(end)}${acoes ? ' · ' + acoes : ''}</small></div>`;
+  };
+  const vazio = DB.contratos.length ? 'Nenhum responsável nesta turma.' : 'Nenhum responsável cadastrado.';
+  document.getElementById('tab-resp').innerHTML = lista.length ? lista.map(x => `<tr><td>${esc(x.r.nome)}<small>CPF ${fmtCPF(x.r.cpf)}</small></td><td>${esc(x.r.tel)}<small>${esc(x.r.email)}</small></td><td>${x.contratos.map(linha).join('')}</td><td><button class="link" data-apagar="${x.r.id}" type="button">Apagar cadastro</button></td></tr>`).join('') : `<tr><td colspan="4" class="vazio">${vazio}</td></tr>`;
 }
-document.getElementById('tab-resp').addEventListener('click', e => { const b = e.target.closest('button[data-apagar]'); if (b) apagarResponsavel(b.dataset.apagar); });
+document.getElementById('tab-resp').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.apagar) apagarResponsavel(b.dataset.apagar);
+  if (b.dataset.contrato) irPara('#contrato/' + b.dataset.contrato);
+  if (b.dataset.ficha) { const c = achar(b.dataset.ficha); if (c) abrirFicha(c); }
+  if (b.dataset.emerg) abrirEmergencia(b.dataset.emerg);
+  if (b.dataset.mapa) abrirMapa(b.dataset.mapa);
+});
 async function apagarResponsavel(id) {
   const x = agruparResponsaveis()[id]; if (!x) return;
   const assinados = x.contratos.filter(c => c.status === 'assinado').length;
@@ -843,6 +925,290 @@ async function apagarResponsavel(id) {
   await recarregar(); renderResponsaveis();
   toast(data.length ? 'Cadastro e arquivos apagados.' : 'Este cadastro já não existia. A tela foi atualizada.');
 }
+
+/* ---------- mapa do endereço de embarque ----------
+   Nada aqui precisa de chave ou cadastro. O mapa embutido é um recurso do Google
+   que funciona há anos sem chave, mas não é oficial; se um dia parar, os dois botões continuam valendo. */
+const REGIAO_MAPA = 'SP'; /* vai no fim do endereço para o mapa procurar no lugar certo */
+const enderecoCompleto = c => [c.endereco, c.bairro, REGIAO_MAPA].filter(Boolean).join(', ');
+function abrirMapa(id) {
+  const c = achar(id); if (!c || !c.endereco) { toast('Este contrato não tem endereço de embarque.'); return; }
+  const end = enderecoCompleto(c), q = encodeURIComponent(end);
+  pegar('mapa-titulo').textContent = c.crianca.nome + ' · ' + c.turma;
+  pegar('mapa-sub').textContent = end;
+  pegar('mapa-frame').src = 'https://www.google.com/maps?q=' + q + '&output=embed';
+  pegar('mapa-google').href = 'https://www.google.com/maps/search/?api=1&query=' + q;
+  pegar('mapa-waze').href = 'https://waze.com/ul?q=' + q + '&navigate=yes';
+  abrirModal('modal-mapa');
+}
+
+/* ---------- ficha da criança: dados do dia a dia + saúde e segurança ----------
+   Edita só o que não muda o acordo. Valor, vencimento, vigência, nome e CPF
+   do responsável ficam travados, porque são o que foi assinado. */
+const formFicha = pegar('form-ficha');
+let fichaAtual = null;
+SERIES.forEach(s => { const o = document.createElement('option'); o.textContent = s; formFicha.elements.serie.appendChild(o); });
+function abrirFicha(c) {
+  fichaAtual = c;
+  const f = formFicha.elements, k = c.crianca;
+  pegar('ficha-sub').textContent = k.nome + ' · ' + nomeStatus[c.status];
+  pegar('ficha-info').innerHTML =
+    `Responsável: <b>${esc(c.responsavel.nome)}</b> · CPF ${fmtCPF(c.responsavel.cpf)}<br>` +
+    `Mensalidade ${fmtBRL(c.mensalidade)} · vence dia ${esc(c.vencimento)} · vigência ${fmtDia(c.inicio)} a ${fmtDia(c.fim)}<br>` +
+    `<small style="color:var(--mu2)">Esses dados fazem parte do contrato e não mudam por aqui.` +
+    (c.status === 'assinado' ? ' O PDF assinado também não muda.' : '') +
+    ' WhatsApp e e-mail valem para todos os contratos deste responsável.</small>';
+  f.crianca.value = k.nome; f.serie.value = k.serie; f.turma.value = c.turma;
+  f.endereco.value = c.endereco; f.bairro.value = c.bairro; f.tel.value = c.responsavel.tel; f.email.value = c.responsavel.email;
+  f.nascimento.value = k.nascimento || ''; f.nascimento.max = hojeISO();
+  CAMPOS_SAUDE.forEach(campo => { f[campo].value = k[campo] || ''; });
+  f.desce_sozinho.checked = !!k.desce_sozinho;
+  pegar('ficha-erro').textContent = '';
+  abrirModal('modal-ficha');
+}
+document.getElementById('det-ficha').addEventListener('click', () => abrirFicha(atual));
+document.getElementById('det-mapa').addEventListener('click', () => abrirMapa(atual.id));
+formFicha.addEventListener('submit', async e => {
+  e.preventDefault(); if (!fichaAtual) return;
+  const c = fichaAtual, k = c.crianca, f = formFicha.elements, erro = pegar('ficha-erro'), btn = pegar('ficha-salvar');
+  const n = { crianca: f.crianca.value.trim(), serie: f.serie.value, turma: f.turma.value, endereco: f.endereco.value.trim(), bairro: f.bairro.value.trim(), tel: f.tel.value.trim(), email: f.email.value.trim() };
+  const novaCrianca = { nome: n.crianca, serie: n.serie, nascimento: f.nascimento.value || null, desce_sozinho: f.desce_sozinho.checked };
+  CAMPOS_SAUDE.forEach(campo => { novaCrianca[campo] = f[campo].value.trim() || null; });
+  erro.textContent = '';
+  if (!n.crianca || !n.serie || !n.turma || !n.email) { erro.textContent = 'Preencha nome, série, turma e e-mail.'; return; }
+  if (novaCrianca.nascimento && novaCrianca.nascimento > hojeISO()) { erro.textContent = 'A data de nascimento não pode ser no futuro.'; return; }
+  if (n.turma !== c.turma) { const lotada = erroLotada(n.turma, c.id); if (lotada) { erro.textContent = lotada; return; } }
+  /* Só grava as tabelas que mudaram */
+  const passos = [];
+  if (n.turma !== c.turma || n.endereco !== c.endereco || n.bairro !== c.bairro)
+    passos.push(() => sb.from('contratos').update({ turma: n.turma, endereco: n.endereco, bairro: n.bairro }).eq('id', c.id).in('status', ['aguardando', 'assinado']).select('id'));
+  const valorAntigo = campo => campo === 'desce_sozinho' ? !!k.desce_sozinho : k[campo];
+  if (Object.keys(novaCrianca).some(campo => String(novaCrianca[campo] ?? '') !== String(valorAntigo(campo) ?? '')))
+    passos.push(() => sb.from('criancas').update(novaCrianca).eq('id', k.id).select('id'));
+  if (n.tel !== c.responsavel.tel || n.email !== c.responsavel.email)
+    passos.push(() => sb.from('responsaveis').update({ telefone: n.tel, email: n.email }).eq('id', c.responsavel.id).select('id'));
+  if (!passos.length) { fecharModais(); toast('Nada mudou.'); return; }
+  btn.disabled = true;
+  let falha = '';
+  for (const passo of passos) {
+    const { data, error } = await passo();
+    if (error) { falha = traduzErro(error); break; }
+    if (!data.length) { falha = 'O banco não deixou salvar (o registro mudou em outro aparelho ou falta permissão).'; break; }
+  }
+  btn.disabled = false;
+  await recarregar();
+  if (falha) { erro.textContent = falha + (passos.length > 1 ? ' Parte das mudanças pode ter sido salva; confira depois de fechar.' : ''); return; }
+  fecharModais();
+  if (location.hash.startsWith('#contrato/')) telaDetalhe(c.id); else redesenharLista();
+  toast('Ficha atualizada.');
+});
+
+/* ---------- emergência: saúde, contatos e quem pode buscar ---------- */
+let emergBusca = '', emergAtual = null;
+/* Crianças com contrato ativo (assinado ou aguardando), uma vez cada */
+function criancasAtivas() {
+  const porCrianca = new Map();
+  DB.contratos.filter(c => (c.status === 'assinado' || c.status === 'aguardando') && naTurma(c)).forEach(c => {
+    const ja = porCrianca.get(c.crianca.id);
+    if (!ja || (ja.status !== 'assinado' && c.status === 'assinado')) porCrianca.set(c.crianca.id, c);
+  });
+  return [...porCrianca.values()];
+}
+const semContatoEmerg = k => !soDigitos(k.emerg1_tel) && !soDigitos(k.emerg2_tel);
+function renderEmergencia() {
+  const termo = emergBusca.toLowerCase(), todas = criancasAtivas();
+  const lista = todas.filter(c => !termo || (c.crianca.nome + ' ' + c.responsavel.nome).toLowerCase().includes(termo)).sort((a, b) => porNome(a.crianca.nome, b.crianca.nome));
+  const faltam = todas.filter(c => semContatoEmerg(c.crianca)).length, aviso = pegar('emerg-pendentes');
+  aviso.hidden = !faltam;
+  aviso.textContent = faltam ? `${faltam} criança(s) sem contato de emergência cadastrado. O contrato pede pelo menos dois (Cláusula 11): preencha em "Editar ficha".` : '';
+  pegar('emerg-lista').innerHTML = lista.length ? lista.map(c => {
+    const k = c.crianca, anos = idade(k.nascimento);
+    const tags = [k.alergias ? '<span class="tag atrasado">Alergia</span>' : '', k.saude ? '<span class="tag aguardando">Cuidados de saúde</span>' : '', semContatoEmerg(k) ? '<span class="tag aberto">Sem contato de emergência</span>' : ''].filter(Boolean).join('');
+    return `<button class="emerg-item" data-emerg="${c.id}" type="button"><b>${esc(k.nome)}</b><small>${esc(c.turma)} · ${esc(k.serie)}${anos !== null ? ' · ' + anos + ' anos' : ''}</small>${tags ? `<span class="emerg-tags">${tags}</span>` : ''}</button>`;
+  }).join('') : `<p class="vazio">${DB.contratos.length ? 'Nenhuma criança encontrada.' : 'Nenhum contrato ainda.'}</p>`;
+}
+pegar('emerg-lista').addEventListener('click', e => { const b = e.target.closest('[data-emerg]'); if (b) abrirEmergencia(b.dataset.emerg); });
+pegar('emerg-busca').addEventListener('input', e => { emergBusca = e.target.value; renderEmergencia(); });
+function botoesContato(numero) {
+  const tel = telLink(numero), wa = linkWa(numero, '');
+  return (tel ? `<a class="btn sm" href="${tel}">Ligar</a>` : '') + (wa ? `<a class="btn ghost sm" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : '');
+}
+function linhaContato(titulo, nome, numero) {
+  if (!nome && !soDigitos(numero)) return '';
+  return `<div class="emerg-contato"><div><b>${esc(nome || '—')}</b><small>${esc(titulo)}${numero ? ' · ' + esc(numero) : ''}</small></div><div class="acoes">${botoesContato(numero)}</div></div>`;
+}
+function abrirEmergencia(id) {
+  const c = achar(id); if (!c) return;
+  emergAtual = c;
+  const k = c.crianca, anos = idade(k.nascimento);
+  pegar('emerg-titulo').textContent = k.nome;
+  pegar('emerg-sub').textContent = ['Turma da ' + String(c.turma || '').toLowerCase(), k.serie, anos !== null ? anos + ' anos' : '', k.nascimento ? 'nasc. ' + fmtDia(k.nascimento) : ''].filter(Boolean).join(' · ');
+  const contatos = linhaContato('Responsável', c.responsavel.nome, c.responsavel.tel) + linhaContato('Contato de emergência 1', k.emerg1_nome, k.emerg1_tel) + linhaContato('Contato de emergência 2', k.emerg2_nome, k.emerg2_tel);
+  const end = c.endereco ? c.endereco + (c.bairro ? ', ' + c.bairro : '') : '';
+  pegar('emerg-corpo').innerHTML =
+    `<div class="emerg-bloco${k.alergias ? ' alerta-saude' : ''}"><span class="emerg-rot">Alergias</span><p>${k.alergias ? esc(k.alergias) : '<i>Nenhuma informada</i>'}</p></div>` +
+    `<div class="emerg-bloco${k.saude ? ' atencao-saude' : ''}"><span class="emerg-rot">Saúde e cuidados especiais</span><p>${k.saude ? esc(k.saude) : '<i>Nada informado</i>'}</p></div>` +
+    `<div class="emerg-bloco"><span class="emerg-rot">Ligar para</span>${contatos}${semContatoEmerg(k) ? '<p class="nao-desce">Nenhum contato de emergência cadastrado. Preencha em "Editar ficha".</p>' : ''}</div>` +
+    `<div class="emerg-bloco"><span class="emerg-rot">Quem pode buscar na volta</span><p>${k.autorizados ? esc(k.autorizados) : '<i>Só o responsável (nenhuma outra pessoa cadastrada)</i>'}</p>` +
+    `<p class="${k.desce_sozinho ? '' : 'nao-desce'}">${k.desce_sozinho ? 'Tem autorização por escrito para descer sem ninguém esperando.' : 'NÃO pode descer sem ninguém esperando. Se não houver quem receba, fica na van e o responsável é avisado (Cláusula 10).'}</p></div>` +
+    `<div class="emerg-bloco"><span class="emerg-rot">Endereço de embarque</span><p>${esc(end || '—')}</p>${c.endereco ? '<button class="link" data-emerg-mapa type="button">Ver no mapa</button>' : ''}</div>`;
+  abrirModal('modal-emerg');
+}
+pegar('emerg-corpo').addEventListener('click', e => {
+  if (!e.target.closest('[data-emerg-mapa]') || !emergAtual) return;
+  const id = emergAtual.id; fecharModais(); abrirMapa(id);
+});
+pegar('emerg-ficha').addEventListener('click', () => {
+  if (!emergAtual) return;
+  const c = achar(emergAtual.id); fecharModais(); if (c) abrirFicha(c);
+});
+document.getElementById('det-emerg').addEventListener('click', () => abrirEmergencia(atual.id));
+
+/* ---------- aniversários (aviso no topo de Contratos) ---------- */
+/* Dias até o próximo aniversário (0 = hoje). Quem nasceu em 29/02 comemora em 28/02 nos anos comuns. */
+function diasAteAniversario(nasc) {
+  if (!nasc) return null;
+  const [, m, d] = nasc.split('-').map(Number), hoje = hojeMeioDia();
+  const noAno = y => { const bissexto = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0; return new Date(y, m - 1, (m === 2 && d === 29 && !bissexto) ? 28 : d, 12); };
+  let prox = noAno(hoje.getFullYear());
+  if (prox < hoje) prox = noAno(hoje.getFullYear() + 1);
+  return Math.round((prox - hoje) / 86400000);
+}
+function mensagemParabens(c) {
+  return `Olá, ${primeiroNome(c.responsavel.nome)}! Hoje é aniversário de ${primeiroNome(c.crianca.nome)} 🎉 A equipe da Van Escolar Tia Patrícia e Tio Vitor deseja um dia muito feliz, cheio de alegria e carinho! 🎂`;
+}
+const chaveParabens = c => 'van-parabens-' + hojeISO() + '-' + c.crianca.id;
+function renderAniversarios() {
+  const el = pegar('aniversarios'), vistos = new Set(), lista = [];
+  DB.contratos.filter(c => (c.status === 'assinado' || c.status === 'aguardando') && c.crianca.nascimento).forEach(c => {
+    if (vistos.has(c.crianca.id)) return; vistos.add(c.crianca.id);
+    const d = diasAteAniversario(c.crianca.nascimento);
+    if (d !== null && d <= DIAS_ANIVERSARIO) lista.push({ c, d });
+  });
+  lista.sort((a, b) => a.d - b.d || porNome(a.c.crianca.nome, b.c.crianca.nome));
+  el.hidden = !lista.length;
+  el.innerHTML = lista.map(({ c, d }) => {
+    const k = c.crianca, anos = (idade(k.nascimento) ?? 0) + (d === 0 ? 0 : 1);
+    if (d > 0) return `<div class="aniver-linha"><span>🎈 Aniversário de <b>${esc(k.nome)}</b> ${d === 1 ? 'amanhã' : 'em ' + d + ' dias'} (${fmtDia(k.nascimento).slice(0, 5)}) · vai fazer ${anos} anos</span></div>`;
+    let enviado = false; try { enviado = !!localStorage.getItem(chaveParabens(c)); } catch (e) { /* sem armazenamento */ }
+    return `<div class="aniver-linha"><span>🎂 Hoje é aniversário de <b>${esc(k.nome)}</b> · faz ${anos} anos <small>· ${esc(c.turma)} · resp. ${esc(c.responsavel.nome)}</small></span>` +
+      (enviado ? '<span class="tag pago">Parabéns enviado</span>' : `<button class="btn or sm" data-parabens="${c.id}" type="button">Mandar parabéns no WhatsApp</button>`) + '</div>';
+  }).join('');
+}
+pegar('aniversarios').addEventListener('click', e => {
+  const b = e.target.closest('button[data-parabens]'); if (!b) return;
+  const c = achar(b.dataset.parabens); if (!c) return;
+  if (!abrirConversa(c.responsavel.tel, mensagemParabens(c))) return;
+  try { localStorage.setItem(chaveParabens(c), '1'); } catch (err) { /* sem armazenamento */ }
+  renderAniversarios();
+});
+
+/* ---------- perfil (nome e foto na barra do topo) ----------
+   Nome e foto ficam na tabela usuarios_painel (colunas "nome" e "foto"). */
+const nomeDoEmail = email => {
+  const parte = (email || '').split('@')[0].split(/[._\-+]/)[0].replace(/\d+/g, '');
+  return parte ? parte[0].toUpperCase() + parte.slice(1) : '';
+};
+const meuNome = () => perfil.nome || nomeDoEmail(usuario && usuario.email);
+const iniciais = n => (n || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+function pintarAvatar(el, nome, foto) {
+  el.style.backgroundImage = foto ? `url(${foto})` : '';
+  el.textContent = foto ? '' : iniciais(nome);
+}
+async function carregarPerfil() {
+  perfil = { nome: '', foto: '' };
+  const { data, error } = await sb.from('usuarios_painel').select('nome, foto').eq('id', usuario.id).maybeSingle();
+  if (error) { console.warn('Perfil ainda não configurado no banco (rode o SQL do perfil):', error.message); return; }
+  if (data) perfil = { nome: data.nome || '', foto: data.foto || '' };
+}
+function renderPerfil() {
+  if (!usuario) return;
+  const nome = meuNome();
+  document.getElementById('perfil-ola').textContent = nome ? 'Olá, ' + nome : 'Olá!';
+  document.getElementById('menu-nome').textContent = nome || '—';
+  document.getElementById('menu-email').textContent = usuario.email;
+  pintarAvatar(document.getElementById('perfil-avatar'), nome, perfil.foto);
+}
+
+/* Menu que abre no clique do nome */
+const perfilBtn = document.getElementById('perfil-btn'), perfilMenu = document.getElementById('perfil-menu');
+function fecharMenu() { perfilMenu.hidden = true; perfilBtn.setAttribute('aria-expanded', 'false'); }
+perfilBtn.addEventListener('click', e => { e.stopPropagation(); perfilMenu.hidden = !perfilMenu.hidden; perfilBtn.setAttribute('aria-expanded', String(!perfilMenu.hidden)); });
+perfilMenu.addEventListener('click', e => { if (e.target.closest('a,button')) fecharMenu(); });
+addEventListener('click', e => { if (!perfilMenu.hidden && !perfilMenu.contains(e.target)) fecharMenu(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') fecharMenu(); });
+addEventListener('hashchange', fecharMenu);
+
+/* Janela "Editar perfil" */
+const formPerfil = document.getElementById('form-perfil');
+let fotoNova = null; /* null = não mexeu · '' = remover · 'data:…' = foto nova */
+const previewPerfil = () => pintarAvatar(document.getElementById('perfil-preview'), formPerfil.elements.nome.value.trim() || meuNome(), fotoNova === null ? perfil.foto : fotoNova);
+function abrirPerfil() {
+  fotoNova = null;
+  formPerfil.elements.nome.value = perfil.nome;
+  formPerfil.elements.nome.placeholder = nomeDoEmail(usuario.email) || 'Seu nome';
+  document.getElementById('perfil-foto').value = '';
+  document.getElementById('perfil-erro').textContent = '';
+  previewPerfil();
+  abrirModal('modal-perfil');
+}
+document.getElementById('menu-editar').addEventListener('click', abrirPerfil);
+formPerfil.elements.nome.addEventListener('input', previewPerfil);
+/* Corta a imagem em quadrado, reduz para 96 px e devolve como texto (data URL) */
+function reduzirFoto(arquivo) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(arquivo);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const T = 96, lado = Math.min(img.width, img.height), cv = document.createElement('canvas');
+      cv.width = cv.height = T;
+      cv.getContext('2d').drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, T, T);
+      resolve(cv.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não consegui abrir essa imagem. Tente um JPG ou PNG.')); };
+    img.src = url;
+  });
+}
+document.getElementById('perfil-foto').addEventListener('change', async e => {
+  const arq = e.target.files[0]; if (!arq) return;
+  const erro = document.getElementById('perfil-erro'); erro.textContent = '';
+  try { fotoNova = await reduzirFoto(arq); previewPerfil(); }
+  catch (err) { erro.textContent = err.message; }
+});
+document.getElementById('perfil-remover').addEventListener('click', () => { fotoNova = ''; document.getElementById('perfil-foto').value = ''; previewPerfil(); });
+formPerfil.addEventListener('submit', async e => {
+  e.preventDefault();
+  const nome = formPerfil.elements.nome.value.trim(), erro = document.getElementById('perfil-erro'), btn = document.getElementById('perfil-salvar');
+  const dados = { nome };
+  if (fotoNova !== null) dados.foto = fotoNova || null;
+  erro.textContent = ''; btn.disabled = true; btn.textContent = 'Salvando…';
+  const { data, error } = await sb.from('usuarios_painel').update(dados).eq('id', usuario.id).select('nome, foto');
+  btn.disabled = false; btn.textContent = 'Salvar';
+  if (error) { erro.textContent = /column|coluna/i.test(error.message) ? 'O banco ainda não tem as colunas do perfil. Rode o SQL do perfil no Supabase.' : traduzErro(error); return; }
+  if (!data.length) { erro.textContent = 'O banco não deixou salvar. Falta a regra de permissão do perfil (está no SQL do perfil).'; return; }
+  perfil = { nome: data[0].nome || '', foto: data[0].foto || '' };
+  renderPerfil(); fecharModais(); toast('Perfil salvo.');
+});
+
+/* ---------- tema claro / escuro (escolha guardada neste aparelho) ---------- */
+const MQ_ESCURO = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const NOMES_TEMA = { auto: 'automático', escuro: 'escuro', claro: 'claro' };
+function temaEscolhido() { try { const t = localStorage.getItem('van-tema'); return NOMES_TEMA[t] ? t : 'auto'; } catch (e) { return 'auto'; } }
+function aplicarTema() {
+  const t = temaEscolhido(), naAssinatura = location.hash.startsWith('#assinar');
+  const escuro = !naAssinatura && (t === 'escuro' || (t === 'auto' && !!MQ_ESCURO && MQ_ESCURO.matches));
+  if (escuro) document.documentElement.setAttribute('data-tema', 'escuro'); else document.documentElement.removeAttribute('data-tema');
+  document.getElementById('menu-tema').textContent = 'Tema: ' + NOMES_TEMA[t];
+}
+document.getElementById('menu-tema').addEventListener('click', () => {
+  const ordem = ['auto', 'escuro', 'claro'], prox = ordem[(ordem.indexOf(temaEscolhido()) + 1) % ordem.length];
+  try { localStorage.setItem('van-tema', prox); } catch (e) { /* sem armazenamento: vale só agora */ }
+  aplicarTema();
+  toast(prox === 'auto' ? 'Tema automático: segue o modo claro/escuro do aparelho.' : 'Tema ' + NOMES_TEMA[prox] + '.');
+});
+if (MQ_ESCURO && MQ_ESCURO.addEventListener) MQ_ESCURO.addEventListener('change', aplicarTema);
+addEventListener('hashchange', aplicarTema);
+aplicarTema();
 
 /* ---------- início ---------- */
 async function iniciar() {
