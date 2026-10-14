@@ -125,7 +125,6 @@ function redesenharLista() {
   const tela = location.hash.slice(1).split('/')[0];
   if (tela === 'financeiro') renderFinanceiro();
   else if (tela === 'responsaveis') renderResponsaveis();
-  else if (tela === 'emergencia') renderEmergencia();
   else renderContratos();
 }
 document.querySelectorAll('.chip[data-turma]').forEach(ch => ch.addEventListener('click', () => {
@@ -249,10 +248,10 @@ async function rota() {
   renderPerfil();
   const grupo = (tela === 'novo' || tela === 'contrato') ? 'contratos' : tela;
   document.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === grupo));
-  const mapa = { contratos: 'tela-contratos', novo: 'tela-novo', contrato: 'tela-detalhe', financeiro: 'tela-financeiro', responsaveis: 'tela-responsaveis', emergencia: 'tela-emergencia' };
+  const mapa = { contratos: 'tela-contratos', novo: 'tela-novo', contrato: 'tela-detalhe', financeiro: 'tela-financeiro', responsaveis: 'tela-responsaveis' };
   const alvo = mapa[tela] || 'tela-contratos';
   document.querySelectorAll('#app .screen').forEach(s => s.classList.toggle('active', s.id === alvo));
-  const listas = ['tela-contratos', 'tela-financeiro', 'tela-responsaveis', 'tela-emergencia'];
+  const listas = ['tela-contratos', 'tela-financeiro', 'tela-responsaveis'];
   if (!carregado) carregando();
   if (!carregado || listas.includes(alvo)) { if (!(await recarregar())) return; }
   if (alvo === 'tela-contratos') renderContratos();
@@ -260,7 +259,6 @@ async function rota() {
   if (alvo === 'tela-detalhe') telaDetalhe(param);
   if (alvo === 'tela-financeiro') renderFinanceiro();
   if (alvo === 'tela-responsaveis') renderResponsaveis();
-  if (alvo === 'tela-emergencia') renderEmergencia();
   window.scrollTo(0, 0);
 }
 addEventListener('hashchange', rota);
@@ -863,8 +861,9 @@ pegar('ext-imprimir').addEventListener('click', () => {
   w.document.close();
 });
 
-/* ---------- responsáveis ---------- */
+/* ---------- responsáveis (em cartões, com saúde e contatos de cada criança) ---------- */
 const nomeStatus = { assinado: 'Assinado', aguardando: 'Aguardando assinatura', rascunho: 'Rascunho', cancelado: 'Cancelado' };
+let respBusca = '';
 function agruparResponsaveis() {
   const porId = {};
   DB.contratos.forEach(c => {
@@ -875,24 +874,46 @@ function agruparResponsaveis() {
   return porId;
 }
 function renderResponsaveis() {
+  const termo = respBusca.toLowerCase();
   const lista = Object.values(agruparResponsaveis())
     .map(x => ({ ...x, contratos: x.contratos.filter(naTurma).sort((a, b) => porNome(a.crianca.nome, b.crianca.nome)) }))
-    .filter(x => x.contratos.length)
+    .filter(x => x.contratos.length && (!termo || (x.r.nome + ' ' + x.contratos.map(c => c.crianca.nome).join(' ')).toLowerCase().includes(termo)))
     .sort((a, b) => porNome(a.r.nome, b.r.nome));
-  const linha = c => {
-    const ativo = c.status === 'aguardando' || c.status === 'assinado';
+
+  /* Aviso no topo: crianças ativas sem contato de emergência (segue o filtro de turma) */
+  const faltam = criancasAtivas().filter(c => semContatoEmerg(c.crianca)).length, aviso = pegar('resp-pendentes');
+  aviso.hidden = !faltam;
+  aviso.textContent = faltam ? `${faltam === 1 ? '1 criança está' : faltam + ' crianças estão'} sem contato de emergência. O contrato pede pelo menos dois (Cláusula 11): use "Editar ficha" para preencher.` : '';
+
+  const filho = c => {
+    const k = c.crianca, ativo = c.status === 'aguardando' || c.status === 'assinado';
+    const selos = ativo ? [
+      k.alergias ? '<span class="tag atrasado">⚠ Alergia</span>' : '',
+      k.saude ? '<span class="tag aguardando">Cuidados de saúde</span>' : '',
+      semContatoEmerg(k) ? '<span class="tag aberto">Sem contato de emergência</span>' : ''
+    ].join('') : '';
     const acoes = [
-      c.endereco ? `<button class="link" data-mapa="${c.id}" type="button">Ver no mapa</button>` : '',
+      ativo ? `<button class="link" data-emerg="${c.id}" type="button">Saúde e contatos</button>` : '',
       ativo ? `<button class="link" data-ficha="${c.id}" type="button">Editar ficha</button>` : '',
-      ativo ? `<button class="link" data-emerg="${c.id}" type="button">Emergência</button>` : ''
+      c.endereco ? `<button class="link" data-mapa="${c.id}" type="button">Ver no mapa</button>` : ''
     ].filter(Boolean).join(' · ');
     const end = c.endereco ? c.endereco + (c.bairro ? ', ' + c.bairro : '') : 'Sem endereço de embarque';
-    return `<div class="filho"><button class="linknome" data-contrato="${c.id}" type="button">${esc(c.crianca.nome)}</button> · ${esc(c.turma)} <span class="tag ${c.status}">${nomeStatus[c.status] || c.status}</span><small>${esc(end)}${acoes ? ' · ' + acoes : ''}</small></div>`;
+    return `<div class="filho"><div class="filho-linha"><button class="linknome" data-contrato="${c.id}" type="button">${esc(k.nome)}</button><span>· ${esc(c.turma)}</span><span class="tag ${c.status}">${nomeStatus[c.status] || c.status}</span>${selos}</div>` +
+      `<small>${esc(end)}</small>${acoes ? `<div class="filho-acoes">${acoes}</div>` : ''}</div>`;
   };
-  const vazio = DB.contratos.length ? 'Nenhum responsável nesta turma.' : 'Nenhum responsável cadastrado.';
-  document.getElementById('tab-resp').innerHTML = lista.length ? lista.map(x => `<tr><td>${esc(x.r.nome)}<small>CPF ${fmtCPF(x.r.cpf)}</small></td><td>${esc(x.r.tel)}<small>${esc(x.r.email)}</small></td><td>${x.contratos.map(linha).join('')}</td><td><button class="link" data-apagar="${x.r.id}" type="button">Apagar cadastro</button></td></tr>`).join('') : `<tr><td colspan="4" class="vazio">${vazio}</td></tr>`;
+  const cartao = x => {
+    const tel = telLink(x.r.tel), wa = linkWa(x.r.tel, '');
+    const contato = [x.r.cpf ? 'CPF ' + fmtCPF(x.r.cpf) : '', x.r.tel, x.r.email].filter(Boolean).map(esc).join(' · ');
+    return `<article class="resp-card"><div class="resp-topo"><div><b class="resp-nome">${esc(x.r.nome)}</b><small>${contato}</small></div>` +
+      `<div class="resp-acoes">${tel ? `<a class="btn ghost sm" href="${tel}">Ligar</a>` : ''}${wa ? `<a class="btn ghost sm" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}</div></div>` +
+      `<div class="resp-filhos">${x.contratos.map(filho).join('')}</div>` +
+      `<div class="resp-rodape"><button class="link" data-apagar="${x.r.id}" type="button">Apagar cadastro</button></div></article>`;
+  };
+  const vazio = !DB.contratos.length ? 'Nenhum responsável cadastrado.' : termo ? 'Ninguém encontrado com esse nome.' : 'Nenhum responsável nesta turma.';
+  pegar('tab-resp').innerHTML = lista.length ? lista.map(cartao).join('') : `<div class="resp-card vazio">${vazio}</div>`;
 }
-document.getElementById('tab-resp').addEventListener('click', e => {
+pegar('resp-busca').addEventListener('input', e => { respBusca = e.target.value; renderResponsaveis(); });
+pegar('tab-resp').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.apagar) apagarResponsavel(b.dataset.apagar);
   if (b.dataset.contrato) irPara('#contrato/' + b.dataset.contrato);
@@ -1003,9 +1024,9 @@ formFicha.addEventListener('submit', async e => {
   toast('Ficha atualizada.');
 });
 
-/* ---------- emergência: saúde, contatos e quem pode buscar ---------- */
-let emergBusca = '', emergAtual = null;
-/* Crianças com contrato ativo (assinado ou aguardando), uma vez cada */
+/* ---------- saúde e contatos (janela aberta pela aba Responsáveis e pela página do contrato) ---------- */
+let emergAtual = null;
+/* Crianças com contrato ativo (assinado ou aguardando), uma vez cada, seguindo o filtro de turma */
 function criancasAtivas() {
   const porCrianca = new Map();
   DB.contratos.filter(c => (c.status === 'assinado' || c.status === 'aguardando') && naTurma(c)).forEach(c => {
@@ -1015,20 +1036,6 @@ function criancasAtivas() {
   return [...porCrianca.values()];
 }
 const semContatoEmerg = k => !soDigitos(k.emerg1_tel) && !soDigitos(k.emerg2_tel);
-function renderEmergencia() {
-  const termo = emergBusca.toLowerCase(), todas = criancasAtivas();
-  const lista = todas.filter(c => !termo || (c.crianca.nome + ' ' + c.responsavel.nome).toLowerCase().includes(termo)).sort((a, b) => porNome(a.crianca.nome, b.crianca.nome));
-  const faltam = todas.filter(c => semContatoEmerg(c.crianca)).length, aviso = pegar('emerg-pendentes');
-  aviso.hidden = !faltam;
-  aviso.textContent = faltam ? `${faltam} criança(s) sem contato de emergência cadastrado. O contrato pede pelo menos dois (Cláusula 11): preencha em "Editar ficha".` : '';
-  pegar('emerg-lista').innerHTML = lista.length ? lista.map(c => {
-    const k = c.crianca, anos = idade(k.nascimento);
-    const tags = [k.alergias ? '<span class="tag atrasado">Alergia</span>' : '', k.saude ? '<span class="tag aguardando">Cuidados de saúde</span>' : '', semContatoEmerg(k) ? '<span class="tag aberto">Sem contato de emergência</span>' : ''].filter(Boolean).join('');
-    return `<button class="emerg-item" data-emerg="${c.id}" type="button"><b>${esc(k.nome)}</b><small>${esc(c.turma)} · ${esc(k.serie)}${anos !== null ? ' · ' + anos + ' anos' : ''}</small>${tags ? `<span class="emerg-tags">${tags}</span>` : ''}</button>`;
-  }).join('') : `<p class="vazio">${DB.contratos.length ? 'Nenhuma criança encontrada.' : 'Nenhum contrato ainda.'}</p>`;
-}
-pegar('emerg-lista').addEventListener('click', e => { const b = e.target.closest('[data-emerg]'); if (b) abrirEmergencia(b.dataset.emerg); });
-pegar('emerg-busca').addEventListener('input', e => { emergBusca = e.target.value; renderEmergencia(); });
 function botoesContato(numero) {
   const tel = telLink(numero), wa = linkWa(numero, '');
   return (tel ? `<a class="btn sm" href="${tel}">Ligar</a>` : '') + (wa ? `<a class="btn ghost sm" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>` : '');

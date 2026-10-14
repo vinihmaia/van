@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script>/* Tema escuro (mesma escolha do painel) */try{var t=localStorage.getItem('van-tema')||'auto';if(t==='escuro'||(t==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-tema','escuro');}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Van PV · Roteiro</title>
 <meta name="robots" content="noindex">
@@ -11,77 +12,153 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 [hidden]{display:none!important}
-.mapa-rota{height:420px;border-radius:14px;overflow:hidden;background:#EFEDE7;margin-bottom:14px;position:relative;z-index:0}
-.mapa-confirmar{height:340px;border-radius:12px;overflow:hidden;margin-bottom:12px;position:relative;z-index:0}
-.parada{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #F1EEE9}
-.parada:last-child{border-bottom:0}
-.num{width:30px;height:30px;border-radius:50%;background:var(--dk);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
-.num.fixo{background:var(--ac)}
-.parada b{display:block;font-size:14px}
-.parada small{display:block;font-size:12.5px;color:var(--mu2);margin-top:2px}
-.hora{display:inline-block;font-weight:600;margin-right:8px;color:var(--ac)}
-.acoes-parada{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.pin-num{background:#0A0608;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font:600 12px Inter,system-ui,sans-serif;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.pin-num.fixo{background:#F4845F}
-.resumo{font-size:13.5px;margin:0 0 12px;color:var(--mu)}
-.alerta{background:var(--warnbg);color:var(--warntx);border-radius:12px;padding:12px 14px;font-size:13.5px;margin-bottom:10px;line-height:1.5}
+.rt{max-width:680px;margin:0 auto;padding:14px 14px 90px}
+.voltar{color:rgba(255,248,242,.85);text-decoration:none;font-size:14px;font-weight:500}
+.voltar:hover{color:#fff}
+.rt-cab{text-align:right;color:#fff;line-height:1.3}
+.rt-cab b{display:block;font-size:15px}
+.rt-cab span{font-size:12.5px;color:rgba(255,248,242,.7)}
+
+/* Escolhas grandes (manhã/tarde, ida/volta) */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:10px}
+.seg-btn{border:0;background:none;border-radius:10px;padding:13px 6px;font:inherit;font-size:15px;font-weight:600;color:var(--mu);cursor:pointer}
+.seg-btn.on{background:var(--dk);color:#fff}
+
+/* Avisos */
+.alerta{background:var(--warnbg);color:var(--warntx);border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:10px;line-height:1.5}
 .alerta.erro{background:var(--redbg);color:var(--redtx)}
 .alerta a{color:inherit;font-weight:600}
-.trechos{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
-.saida{display:flex;align-items:center;gap:8px;font-size:13px;margin-left:auto}
-.saida input{border:1px solid rgba(26,20,16,.15);border-radius:999px;padding:6px 12px;font:inherit;background:#fff}
-@media(max-width:600px){.parada{grid-template-columns:30px 1fr}.acoes-parada{grid-column:2;justify-content:flex-start}.saida{margin-left:0}.mapa-rota{height:340px}}
-@media print{.topbar,.filtros,.trechos,.acoes-parada,.nao-imprimir{display:none!important}body{background:#fff}.mapa-rota{height:380px}}
+
+/* Cartão de resumo */
+.rt-resumo{background:var(--card);border-radius:16px;padding:16px;margin:4px 0 12px}
+.rt-numeros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rt-num{background:var(--bg);border-radius:12px;padding:10px 6px;text-align:center}
+.rt-num b{display:block;font-size:22px;letter-spacing:-.02em}
+.rt-num span{font-size:12px;color:var(--mu2)}
+.rt-saida{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 12px;font-size:14px;font-weight:500}
+.rt-saida input{border:1px solid rgba(26,20,16,.15);border-radius:10px;padding:9px 12px;font:inherit;font-size:16px;background:#fff;color:var(--tx)}
+.rt-comecar{display:grid;gap:8px}
+.rt-comecar .sub{margin:0;text-align:center}
+.btn.grande{padding:15px 18px;font-size:16px;font-weight:600}
+.btn.duas-linhas{flex-direction:column;gap:2px;text-align:center}
+.btn.duas-linhas small{font-size:12.5px;font-weight:400;opacity:.85}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.ok:hover{background:#178A66}
+.rt-progresso{margin:12px 0 0;font-size:14px;font-weight:600;text-align:center}
+
+/* Mapa */
+.mapa-caixa{border-radius:16px;overflow:hidden;margin-bottom:14px;position:relative;z-index:0}
+.mapa-rota{height:300px;background:#EFEDE7}
+.mapa-confirmar{height:340px;border-radius:12px;overflow:hidden;margin-bottom:12px;position:relative;z-index:0}
+.pin-num{background:#0A0608;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font:700 12px Inter,system-ui,sans-serif;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pin-num.prox{background:#F4845F;transform:scale(1.3)}
+.pin-num.feito{background:#1D9E75}
+.pin-num.fixo{background:#fff;font-size:15px}
+
+/* Cartões das paradas */
+.rt-h2{font-size:17px;margin:20px 2px 10px}
+.rt-explica{margin:-4px 2px 10px;line-height:1.5}
+.rt-lista{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.pc{display:grid;grid-template-columns:38px 1fr auto;gap:4px 12px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.pc.proxima{border:2px solid var(--ac);box-shadow:0 6px 20px rgba(244,132,95,.18)}
+.pc.feita,.pc.faltou{opacity:.6}
+.pc-fixa{background:transparent;border-style:dashed}
+.pc-num{width:36px;height:36px;border-radius:50%;background:var(--dk);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.pc.proxima .pc-num{background:var(--ac)}
+.pc.feita .pc-num{background:var(--ok)}
+.pc-num.fixo{background:var(--card);border:1.5px solid var(--line);font-size:18px}
+.pc-num.falta-marcar{background:var(--warn)}
+.pc-info{min-width:0}
+.pc-hora{display:block;font-size:13px;font-weight:700;color:var(--ac);margin-bottom:1px}
+.pc-nome{display:block;font-size:17px;line-height:1.3}
+.pc-sub{display:block;font-size:13px;color:var(--mu2);margin-top:3px;line-height:1.4}
+.pc-aviso{display:block;font-size:13px;margin-top:6px;padding:6px 10px;border-radius:8px;background:var(--bg);line-height:1.4}
+.pc-aviso.alerg{background:var(--redbg);color:var(--redtx);font-weight:600}
+.pc-aviso.saude,.pc-aviso.entrega{background:var(--warnbg);color:var(--warntx)}
+.pc-aviso.entrega{font-weight:600}
+.pc-selo{font-size:11px;font-weight:700;letter-spacing:.05em;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.pc-selo.prox{background:var(--ac);color:#fff}
+.pc-selo.ok{background:var(--okbg);color:var(--oktx)}
+.pc-selo.falta{background:var(--bg);color:var(--mu)}
+.pc-botoes{grid-column:1/-1;display:flex;gap:8px;margin-top:10px}
+.pc-botoes>*{flex:1;min-height:46px;font-size:15px}
+.pc-botoes .btn.ok{flex:1.6}
+.pc-mais{grid-column:1/-1;margin-top:8px;font-size:12.5px;color:var(--mu2);text-align:center}
+
+/* Mais opções */
+.rt-opcoes{margin-top:24px;background:var(--card);border-radius:14px;padding:12px 16px}
+.rt-opcoes summary{cursor:pointer;font-weight:600;font-size:14px}
+.rt-opcoes-botoes{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 8px}
+
+@media(min-width:760px){.mapa-rota{height:380px}}
+[data-tema="escuro"] .seg-btn.on{background:#F3EDE6;color:#1A1410}
+[data-tema="escuro"] .rt-saida input{background:#15100D;border-color:rgba(255,255,255,.16)}
+[data-tema="escuro"] .mapa-rota{background:#15100D}
+@media print{.topbar,.seg,.rt-saida,.rt-comecar,.pc-botoes,.pc-mais,.rt-opcoes,.nao-imprimir{display:none!important}body{background:#fff}.pc{break-inside:avoid;opacity:1!important}.mapa-rota{height:360px}}
 </style>
 </head>
 <body>
 <header class="topbar nao-imprimir">
   <div class="topin">
-    <div class="marca"><span style="border:0;padding:0;color:#fff;font-weight:600">Roteiro da van</span></div>
-    <a class="btn ghost sm" href="index.html">← Voltar ao painel</a>
+    <a class="voltar" href="index.html">← Painel</a>
+    <div class="rt-cab"><b>Roteiro da van</b><span id="rt-data"></span></div>
   </div>
 </header>
 
-<main class="wrap">
+<main class="rt">
   <div class="alerta" id="aviso-login" hidden></div>
 
   <div id="conteudo" hidden>
-    <div class="head">
-      <div><h1 id="rot-titulo">Roteiro</h1><p class="sub" id="rot-sub"></p></div>
-      <div class="acts nao-imprimir"><button class="btn ghost" id="rot-imprimir" type="button">Imprimir</button><button class="btn" id="rot-calcular" type="button">Recalcular rota</button></div>
+    <div class="seg" role="group" aria-label="Turma">
+      <button class="seg-btn" data-turma="Manhã" type="button">☀️ Manhã</button>
+      <button class="seg-btn" data-turma="Tarde" type="button">🌇 Tarde</button>
+    </div>
+    <div class="seg" role="group" aria-label="Ida ou volta">
+      <button class="seg-btn" data-sentido="ida" type="button">Ida · buscar em casa</button>
+      <button class="seg-btn" data-sentido="volta" type="button">Volta · levar para casa</button>
     </div>
 
-    <div class="filtros">
-      <button class="chip on" data-turma="Manhã" type="button">Turma da manhã</button><button class="chip" data-turma="Tarde" type="button">Turma da tarde</button>
-    </div>
-    <div class="filtros">
-      <button class="chip on" data-sentido="ida" type="button">Ida (casa → escola)</button><button class="chip" data-sentido="volta" type="button">Volta (escola → casa)</button>
-      <label class="saida">Horário de saída <input id="rot-saida" type="time"></label>
-    </div>
+    <div id="rt-alertas"></div>
 
-    <div id="rot-alertas"></div>
-    <p class="resumo" id="rot-resumo"></p>
-    <div class="mapa-rota" id="rot-mapa"></div>
-    <div class="trechos" id="rot-trechos"></div>
-    <div class="tabela" id="rot-lista"></div>
+    <section class="rt-resumo" id="rt-resumo" hidden>
+      <div class="rt-numeros" id="rt-numeros"></div>
+      <label class="rt-saida">Que horas a van sai? <input id="rt-saida" type="time"></label>
+      <div class="rt-comecar" id="rt-comecar"></div>
+      <p class="rt-progresso" id="rt-progresso"></p>
+    </section>
 
-    <div id="bloco-sem-local" hidden>
-      <div class="secao"><h2>Sem ponto confirmado <span id="sem-local-qtd"></span></h2></div>
-      <p class="sub" style="margin:-4px 0 10px">Estas crianças NÃO entram no roteiro até você confirmar o ponto de embarque no mapa.</p>
-      <div class="tabela" id="rot-sem-local"></div>
-    </div>
+    <div class="mapa-caixa" id="rt-mapa-caixa" hidden><div class="mapa-rota" id="rt-mapa"></div></div>
+
+    <h2 class="rt-h2" id="rt-h2" hidden>Paradas, na ordem</h2>
+    <ol class="rt-lista" id="rt-lista"></ol>
+
+    <section id="rt-faltam" hidden>
+      <h2 class="rt-h2">Falta marcar no mapa <span id="rt-faltam-qtd"></span></h2>
+      <p class="sub rt-explica">Estas crianças ainda NÃO entram no roteiro. Toque em "Marcar a casa no mapa", ponha o alfinete na porta da casa e confirme. Só precisa fazer uma vez.</p>
+      <ol class="rt-lista" id="rt-faltam-lista"></ol>
+    </section>
+
+    <details class="rt-opcoes nao-imprimir">
+      <summary>Mais opções</summary>
+      <div class="rt-opcoes-botoes">
+        <button class="btn ghost sm" id="rt-recomecar" type="button">Desmarcar as paradas de hoje</button>
+        <button class="btn ghost sm" id="rt-calcular" type="button">Calcular a rota de novo</button>
+        <button class="btn ghost sm" id="rt-imprimir" type="button">Imprimir a lista</button>
+      </div>
+      <p class="sub">As marcações de "Embarcou" e "Entregue" ficam guardadas só neste celular e começam do zero todo dia.</p>
+    </details>
   </div>
 </main>
 
-<!-- Janela: confirmar o ponto de embarque no mapa -->
+<!-- Janela: marcar a casa no mapa -->
 <div class="modal-fundo" id="modal-local" hidden>
   <div class="modal largo" role="dialog" aria-modal="true" aria-labelledby="local-titulo">
-    <h2 id="local-titulo">Confirmar ponto de embarque</h2>
+    <h2 id="local-titulo">Onde fica a casa?</h2>
     <p class="sub" id="local-sub"></p>
     <div class="alerta" id="local-aviso"></div>
     <div class="mapa-confirmar" id="local-mapa"></div>
     <p class="erro" id="local-erro"></p>
-    <div class="facts"><button class="btn ghost" id="local-fechar" type="button">Cancelar</button><button class="btn" id="local-salvar" type="button">Confirmar este ponto</button></div>
+    <div class="facts"><button class="btn ghost" id="local-fechar" type="button">Cancelar</button><button class="btn" id="local-salvar" type="button">Confirmar este local</button></div>
   </div>
 </div>
 

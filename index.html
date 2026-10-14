@@ -15,7 +15,22 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <script>/* Liga o tema escuro antes de desenhar a página (evita piscar). Nunca na página de assinatura dos pais. */try{var t=localStorage.getItem('van-tema')||'auto';if(location.hash.indexOf('#assinar')!==0&&(t==='escuro'||(t==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.setAttribute('data-tema','escuro');}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
-<style>[hidden]{display:none!important}</style>
+<style>
+[hidden]{display:none!important}
+/* ===== Aba Responsáveis em cartões (com saúde e contatos) ===== */
+.resp-lista{display:grid;gap:12px}
+.resp-card{background:var(--card);border-radius:14px;padding:16px}
+.resp-card.vazio{text-align:center;color:var(--mu2);font-size:13.5px;padding:32px}
+.resp-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.resp-nome{font-size:16px}
+.resp-topo small{display:block;font-size:12.5px;color:var(--mu2);margin-top:3px;word-break:break-word}
+.resp-acoes{display:flex;gap:6px;flex-wrap:wrap}
+.resp-filhos{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.filho-linha{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px}
+.filho small{display:block;font-size:12.5px;color:var(--mu2);margin-top:3px}
+.filho-acoes{margin-top:4px}
+.resp-rodape{text-align:right;margin-top:10px}
+</style>
 </head>
 <body>
 <svg style="display:none" aria-hidden="true">
@@ -70,7 +85,7 @@
   <header class="topbar">
     <div class="topin">
       <div class="marca"><svg viewBox="0 0 360 120" aria-label="vitrapi"><use href="#vitrapi"/></svg><span>Tia Patrícia e Tio Vitor</span></div>
-      <nav class="tabs" aria-label="Seções"><a href="#contratos" data-tab="contratos">Contratos</a><a href="#financeiro" data-tab="financeiro">Financeiro</a><a href="#responsaveis" data-tab="responsaveis">Responsáveis</a><a href="#emergencia" data-tab="emergencia">Emergência</a><a href="roteiro.html">Roteiro</a></nav>
+      <nav class="tabs" aria-label="Seções"><a href="#contratos" data-tab="contratos">Contratos</a><a href="#financeiro" data-tab="financeiro">Financeiro</a><a href="#responsaveis" data-tab="responsaveis">Responsáveis</a><a href="roteiro.html">Roteiro</a></nav>
       <div class="quem">
         <button class="perfil" id="perfil-btn" type="button" aria-haspopup="true" aria-expanded="false"><span class="avatar" id="perfil-avatar"></span><span id="perfil-ola">Olá!</span></button>
         <div class="menu" id="perfil-menu" hidden>
@@ -142,7 +157,7 @@
             <button class="btn" id="det-gerar" type="button">Gerar link de assinatura</button>
             <button class="btn ghost" id="det-editar" type="button">Editar</button>
             <button class="btn ghost" id="det-ficha" type="button">Editar ficha</button>
-            <button class="btn ghost" id="det-emerg" type="button">Emergência</button>
+            <button class="btn ghost" id="det-emerg" type="button">Saúde e contatos</button>
             <button class="btn ghost" id="det-mapa" type="button">Ver no mapa</button>
             <button class="btn ghost" id="det-pdf" type="button">Baixar PDF</button>
             <button class="link" id="det-cancelar" type="button">Cancelar contrato</button>
@@ -194,20 +209,16 @@
     </section>
 
     <section class="screen" id="tela-responsaveis">
-      <div class="head"><div><h1>Responsáveis</h1><p class="sub">Quem assina os contratos. Um responsável pode ter mais de uma criança.</p></div></div>
-      <div class="filtros"><button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button></div>
-      <div class="tabela"><table><thead><tr><th>Responsável</th><th>Contato</th><th>Criança · turma · contrato</th><th></th></tr></thead><tbody id="tab-resp"></tbody></table></div>
-    </section>
-
-    <section class="screen" id="tela-emergencia">
       <div class="head">
-        <div><h1>Emergência</h1><p class="sub">Saúde, contatos e quem pode buscar cada criança. Toque no nome para abrir.</p></div>
+        <div><h1>Responsáveis</h1><p class="sub">Quem assina os contratos, as crianças de cada um e a ficha de saúde e contatos.</p></div>
         <div class="acts"><a class="btn or" href="tel:192">Ligar SAMU 192</a></div>
       </div>
-      <div class="filtros"><button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button></div>
-      <div class="filtros"><input class="busca" id="emerg-busca" type="search" placeholder="Buscar criança ou responsável"></div>
-      <div class="aviso-venc" id="emerg-pendentes" hidden></div>
-      <div class="emerg-grade" id="emerg-lista"></div>
+      <div class="filtros">
+        <button class="chip on" data-turma="" type="button">Manhã e tarde</button><button class="chip" data-turma="Manhã" type="button">Só manhã</button><button class="chip" data-turma="Tarde" type="button">Só tarde</button>
+        <input class="busca" id="resp-busca" type="search" placeholder="Buscar responsável ou criança">
+      </div>
+      <div class="aviso-venc" id="resp-pendentes" hidden></div>
+      <div class="resp-lista" id="tab-resp"></div>
     </section>
 
   </main>
@@ -307,10 +318,10 @@
   </div>
 </div>
 
-<!-- ===== JANELA: EMERGÊNCIA ===== -->
+<!-- ===== JANELA: SAÚDE E CONTATOS ===== -->
 <div class="modal-fundo" id="modal-emerg" hidden>
   <div class="modal largo" role="dialog" aria-modal="true" aria-labelledby="emerg-titulo">
-    <h2 id="emerg-titulo">Emergência</h2>
+    <h2 id="emerg-titulo">Saúde e contatos</h2>
     <p class="sub" id="emerg-sub"></p>
     <div id="emerg-corpo"></div>
     <div class="facts"><button class="btn ghost" type="button" data-fechar>Fechar</button><button class="btn ghost" id="emerg-ficha" type="button">Editar ficha</button><a class="btn or" href="tel:192">Ligar SAMU 192</a></div>
