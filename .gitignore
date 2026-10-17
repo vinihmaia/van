@@ -1,0 +1,21 @@
+# Arquivos que o sistema operacional cria sozinho
+.DS_Store
+Thumbs.db
+
+# Configurações de editor
+.vscode/
+.idea/
+
+# Senhas e chaves secretas: NUNCA sobem
+.env
+.env.*
+
+# Vídeos e fotos pessoais
+*.mp4
+*.mov
+
+# Para quando entrar o Next.js
+node_modules/
+.next/
+out/
+.vercel
